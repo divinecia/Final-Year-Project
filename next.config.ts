@@ -31,8 +31,20 @@ const nextConfig: NextConfig = {
       }
     ],
   },
+  
+  // External packages that should not be bundled
+  serverExternalPackages: [
+    'genkit',
+    '@genkit-ai/googleai',
+    '@genkit-ai/firebase',
+    '@genkit-ai/next',
+    '@opentelemetry/exporter-jaeger',
+    'handlebars',
+  ],
+  
+  // Webpack configuration for compatibility
   webpack: (config, { isServer }) => {
-    // Handle handlebars issue for client builds
+    // Handle handlebars and Node.js modules for client builds
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -40,6 +52,9 @@ const nextConfig: NextConfig = {
         module: false,
         path: false,
         crypto: false,
+        stream: false,
+        util: false,
+        os: false,
       };
     }
     
@@ -50,6 +65,7 @@ const nextConfig: NextConfig = {
         'genkit',
         '@genkit-ai/googleai',
         '@genkit-ai/firebase',
+        '@genkit-ai/next',
         '@opentelemetry/exporter-jaeger',
         'handlebars'
       );
