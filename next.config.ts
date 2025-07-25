@@ -17,17 +17,14 @@ const nextConfig: NextConfig = {
   
   // Faster builds in development
   experimental: {
-    optimizeCss: true,
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
     webpackBuildWorker: true,
-    parallelServerCompiles: true,
-    parallelServerBuildTraces: true,
   },
   
   // External packages optimization
   serverExternalPackages: ['firebase-admin'],
   
-  // Image optimizations (optimized for cloud environments)
+  // Image optimizations
   images: {
     formats: ['image/webp'],
     deviceSizes: [640, 828, 1200, 1920],
@@ -41,69 +38,31 @@ const nextConfig: NextConfig = {
     ],
     dangerouslyAllowSVG: false,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
-    // Disable image optimization for build issues in Codespaces
-    unoptimized: process.env.CODESPACES ? true : false,
   },
   
   // Webpack optimizations
   webpack: (config, { dev, isServer }) => {
-    // Performance optimizations for all builds
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      // Reduce bundle size by aliasing heavy libraries
-      '@radix-ui/react-icons': '@radix-ui/react-icons/dist/index.js',
+    // Fix for Genkit and handlebars
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      path: false,
+      os: false,
     };
 
-    // Production optimizations
-    if (!dev) {
-      config.optimization = {
-        ...config.optimization,
-        moduleIds: 'deterministic',
-        splitChunks: {
-          chunks: 'all',
-          minSize: 20000,
-          maxSize: 244000,
-          cacheGroups: {
-            vendor: {
-              test: /[\\/]node_modules[\\/]/,
-              name: 'vendors',
-              chunks: 'all',
-              enforce: true,
-            },
-            common: {
-              name: 'common',
-              minChunks: 2,
-              chunks: 'all',
-              enforce: true,
-            },
-            react: {
-              test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
-              name: 'react',
-              chunks: 'all',
-              enforce: true,
-            },
-          },
-        },
+    // Ignore problematic modules in client builds
+    if (!isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        '@opentelemetry/winston-transport': false,
+        'handlebars': false,
       };
-      
-      // Tree shaking optimizations
-      config.optimization.usedExports = true;
-      config.optimization.sideEffects = false;
     }
 
-    // Development optimizations
-    if (dev) {
-      config.watchOptions = {
-        poll: 1000,
-        aggregateTimeout: 300,
-        ignored: ['**/node_modules', '**/.next'],
-      };
-    }
-    
     return config;
   },
   
-  // Headers for caching
+  // Headers for security
   async headers() {
     return [
       {
@@ -120,15 +79,6 @@ const nextConfig: NextConfig = {
           {
             key: 'X-XSS-Protection',
             value: '1; mode=block',
-          },
-        ],
-      },
-      {
-        source: '/api/(.*)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=300, s-maxage=300',
           },
         ],
       },
