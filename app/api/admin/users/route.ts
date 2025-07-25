@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
-import { collection, query, orderBy, limit, getDocs, doc, updateDoc, where } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, doc, updateDoc, where, addDoc } from 'firebase/firestore';
 import { z } from 'zod';
 
 // Schema for user query parameters
@@ -16,6 +16,17 @@ const UpdateUserStatusSchema = z.object({
   status: z.enum(['active', 'inactive', 'suspended']),
   reason: z.string().optional(),
 });
+
+// Schema for creating a new user
+const CreateUserSchema = z.object({
+  userType: z.enum(['worker', 'household', 'admin']),
+  fullName: z.string().min(1),
+  email: z.string().email(),
+  phone: z.string().min(10),
+  status: z.enum(['active', 'inactive', 'pending', 'suspended']).default('pending'),
+  // Additional fields can be added here as needed
+});
+
 
 export async function GET(request: NextRequest) {
   try {
@@ -124,6 +135,49 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: false,
       error: 'Failed to fetch users'
+    }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+
+    // Validate request body
+    const validatedData = CreateUserSchema.parse(body);
+
+    // Determine collection name
+    const collectionName = validatedData.userType === 'admin' ? 'admins' : validatedData.userType;
+
+    // Add createdAt and updatedAt timestamps
+    const newUser = {
+      ...validatedData,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    // Create new user document
+    const docRef = await addDoc(collection(db, collectionName), newUser);
+
+    return NextResponse.json({
+      success: true,
+      data: { id: docRef.id, ...newUser },
+      message: 'User created successfully',
+    });
+  } catch (error) {
+    console.error('Error creating user:', error);
+
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid request data',
+        details: error.errors,
+      }, { status: 400 });
+    }
+
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to create user',
     }, { status: 500 });
   }
 }

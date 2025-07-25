@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Send, Phone, MessageCircle } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/hooks/use-toast"
-import { getChatRooms, getMessages, sendMessage, markMessagesAsRead, getUserProfile, type Message, type ChatRoom } from "./actions"
+import { getConversations, getMessages, sendMessage, markMessagesAsRead, getUserProfile, type Message, type Conversation } from "./actions"
 import { onSnapshot, query, collection, orderBy } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { cn } from "@/lib/utils"
@@ -17,8 +17,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 export default function HouseholdMessagingPage() {
     const { user, loading: authLoading } = useAuth();
     const { toast } = useToast();
-    const [chatRooms, setChatRooms] = React.useState<ChatRoom[]>([]);
-    const [selectedChatRoom, setSelectedChatRoom] = React.useState<ChatRoom | null>(null);
+    const [chatRooms, setChatRooms] = React.useState<Conversation[]>([]);
+    const [selectedChatRoom, setSelectedChatRoom] = React.useState<Conversation | null>(null);
     const [messages, setMessages] = React.useState<Message[]>([]);
     const [newMessage, setNewMessage] = React.useState("");
     const [loading, setLoading] = React.useState(true);
@@ -32,7 +32,7 @@ export default function HouseholdMessagingPage() {
         const fetchChatRooms = async () => {
             setLoading(true);
             try {
-                const rooms = await getChatRooms(user.uid, 'household');
+                const rooms = await getConversations(user.uid, 'household');
                 setChatRooms(rooms);
                 if (rooms.length > 0 && !selectedChatRoom) {
                     setSelectedChatRoom(rooms[0]);
@@ -88,12 +88,17 @@ export default function HouseholdMessagingPage() {
         if (!selectedChatRoom) return;
 
         const fetchOtherUserProfile = async () => {
-            const profile = await getUserProfile(selectedChatRoom.workerId, 'worker');
-            setOtherUserProfile(profile);
+            if (!user) return;
+            // Get the worker ID (the participant that's not the current user)
+            const workerId = selectedChatRoom.participants.find(id => id !== user.uid);
+            if (workerId) {
+                const profile = await getUserProfile(workerId, 'worker');
+                setOtherUserProfile(profile);
+            }
         };
 
         fetchOtherUserProfile();
-    }, [selectedChatRoom]);
+    }, [selectedChatRoom, user]);
 
     React.useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -111,7 +116,7 @@ export default function HouseholdMessagingPage() {
             senderId: user.uid,
             senderName: user.displayName || 'Household',
             senderType: 'household',
-            bookingId: selectedChatRoom.bookingId,
+            jobId: selectedChatRoom.jobId,
         });
 
         if (!result.success) {
@@ -193,10 +198,10 @@ export default function HouseholdMessagingPage() {
                             >
                                 <Avatar className="h-10 w-10">
                                     <AvatarImage src={otherUserProfile?.profilePicture || "https://placehold.co/100x100.png"} />
-                                    <AvatarFallback>{room.workerName.charAt(0)}</AvatarFallback>
+                                    <AvatarFallback>W</AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1 min-w-0">
-                                    <p className="font-medium truncate">{room.workerName}</p>
+                                    <p className="font-medium truncate">{room.jobTitle || 'Worker Chat'}</p>
                                     <p className="text-sm text-muted-foreground truncate">
                                         {room.lastMessage || "No messages yet"}
                                     </p>
@@ -214,10 +219,10 @@ export default function HouseholdMessagingPage() {
                         <CardHeader className="flex flex-row items-center gap-4 p-4 border-b">
                             <Avatar>
                                 <AvatarImage src={otherUserProfile?.profilePicture || "https://placehold.co/100x100.png"} />
-                                <AvatarFallback>{selectedChatRoom.workerName.charAt(0)}</AvatarFallback>
+                                <AvatarFallback>{otherUserProfile?.fullName?.charAt(0) || 'W'}</AvatarFallback>
                             </Avatar>
                             <div className="flex-1">
-                                <p className="font-semibold">{selectedChatRoom.workerName}</p>
+                                <p className="font-semibold">{otherUserProfile?.fullName || 'Worker'}</p>
                                 <p className="text-sm text-muted-foreground flex items-center gap-2">
                                     <span className="h-2 w-2 rounded-full bg-green-500"></span>
                                     Active now
@@ -236,7 +241,7 @@ export default function HouseholdMessagingPage() {
                                         {!isCurrentUser && (
                                             <Avatar className="h-8 w-8">
                                                 <AvatarImage src={otherUserProfile?.profilePicture || "https://placehold.co/100x100.png"} />
-                                                <AvatarFallback>{selectedChatRoom.workerName.charAt(0)}</AvatarFallback>
+                                                <AvatarFallback>{otherUserProfile?.fullName?.charAt(0) || 'W'}</AvatarFallback>
                                             </Avatar>
                                         )}
                                         <div className={cn(

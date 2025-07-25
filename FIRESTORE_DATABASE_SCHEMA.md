@@ -1,177 +1,430 @@
-# Database Schema Alignment - Status Summary
+# HouseHelp Firestore Database Schema
 
 ## Overview
-This document tracks the comprehensive update of the Househelp platform codebase to align with the standardized Firestore database schema. All database operations have been systematically updated to use the new schema structure.
+This document outlines the complete Firestore database schema for the HouseHelp application, including all collections, documents, fields, types, validation rules, and relationships.
 
-## Completed Updates
+## Collections Structure
 
-### 1. Core Schema Documentation
-- **File**: `FIRESTORE_DATABASE_SCHEMA.md`
-- **Status**: ✅ Complete
-- **Lines**: 703 lines of comprehensive documentation
-- **Description**: Complete database schema with TypeScript interfaces, examples, and best practices
+### 1. Workers Collection (`workers`)
+**Purpose:** Store worker profiles and related information
 
-### 2. Worker Registration System
-- **File**: `app/worker/register/actions.ts`
-- **Status**: ✅ Complete
-- **Updates**:
-  - Restructured worker data to match schema sections
-  - Added `personalInfo`, `workProfile`, `accountStatus`, `performance` sections
-  - Enhanced type safety with proper field organization
+```typescript
+interface Worker {
+  // Required fields
+  id: string;                    // Document ID (Firebase Auth UID)
+  fullName: string;              // Worker's full name
+  email: string;                 // Worker's email (unique)
+  phone: string;                 // Worker's phone number
+  services: string[];            // Array of service types offered
+  experience: string;            // Years of experience
+  location: string;              // Worker's location/city
+  
+  // Optional fields
+  bio?: string;                  // Worker's biography/description
+  hourlyRate: number;            // Hourly rate in RWF (default: 1500)
+  isAvailable: boolean;          // Current availability status
+  rating: number;                // Average rating (0-5)
+  totalJobs: number;             // Total completed jobs
+  languages: string[];           // Spoken languages
+  nationalId: string;            // National ID number
+  profileImage?: string;         // Profile image URL
+  
+  // Job preferences
+  oneTimeJobs: boolean;          // Accepts one-time jobs
+  recurringJobs: boolean;        // Accepts recurring jobs
+  
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+  lastActive?: Date;
+}
+```
 
-### 3. Messaging System
-- **File**: `app/household/messaging/actions.ts`
-- **Status**: ✅ Complete
-- **Updates**:
-  - Migrated from `chats` subcollection to separate `conversations` and `messages` collections
-  - Updated conversation creation and message handling
-  - Aligned with schema structure for real-time messaging
+**Indexes:**
+- `location + isAvailable + rating`
+- `services (array) + location + hourlyRate`
+- `isAvailable + createdAt`
 
-### 4. Reviews System
-- **File**: `app/household/reviews/actions.ts`
-- **Status**: ✅ Complete
-- **Updates**:
-  - Moved from embedded job reviews to dedicated `reviews` collection
-  - Updated review submission to create separate review documents
-  - Enhanced review data structure with schema compliance
+### 2. Households Collection (`households`)
+**Purpose:** Store household user profiles
 
-### 5. Worker Data Retrieval
-- **File**: `app/household/find-worker/actions.ts`
-- **Status**: ✅ Complete
-- **Updates**:
-  - Updated worker object mapping to handle schema fields
-  - Added proper handling of nested fields (`personalInfo`, `workProfile`, etc.)
-  - Enhanced hourlyRate field handling with array/single value support
+```typescript
+interface Household {
+  // Required fields
+  id: string;                    // Document ID (Firebase Auth UID)
+  fullName: string;              // Household head's name
+  email: string;                 // Email address (unique)
+  phone: string;                 // Phone number
+  location: string;              // Location/address
+  
+  // Optional fields
+  profileImage?: string;         // Profile image URL
+  totalBookings: number;         // Total bookings made
+  
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+  lastActive?: Date;
+}
+```
 
-### 6. Notification System
-- **File**: `lib/notifications.ts`
-- **Status**: ✅ Complete (New File)
-- **Updates**:
-  - Created standardized notification helper functions
-  - Aligned with `notifications` collection schema
-  - Added job-specific and payment-specific notification helpers
+### 3. Admins Collection (`admins`)
+**Purpose:** Store admin user profiles
 
-### 7. Job Posting System
-- **File**: `app/household/post-job/actions.ts`
-- **Status**: ✅ Complete
-- **Updates**:
-  - Restructured job data to match schema structure
-  - Added compensation object with nested salary/benefits
-  - Integrated notification system for job posting events
-  - Enhanced job metadata organization
+```typescript
+interface Admin {
+  id: string;                    // Document ID (Firebase Auth UID)
+  fullName: string;              // Admin's full name
+  email: string;                 // Email address
+  role: 'super_admin' | 'admin'; // Admin role level
+  permissions: string[];         // Array of permissions
+  
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+  lastActive?: Date;
+}
+```
 
-### 8. Worker Dashboard
-- **File**: `app/worker/dashboard/actions.ts`
-- **Status**: ✅ Complete
-- **Updates**:
-  - Updated worker stats to use schema-aligned fields
-  - Enhanced earnings calculation with proper field mapping
-  - Added fallback support for old and new data structures
+### 4. Jobs Collection (`jobs`)
+**Purpose:** Store job postings from households
 
-### 9. Worker Jobs System
-- **File**: `app/worker/jobs/actions.ts`
-- **Status**: ✅ Complete
-- **Updates**:
-  - Updated job listing to use compensation object structure
-  - Enhanced worker application data with schema fields
-  - Integrated notification system for job applications
+```typescript
+interface Job {
+  id: string;                    // Auto-generated document ID
+  
+  // Basic job information
+  title: string;                 // Job title
+  description: string;           // Detailed job description
+  serviceType: string;           // Type of service needed
+  
+  // Relationships
+  householdId: string;           // Reference to household document
+  workerId?: string;             // Assigned worker ID (null if unassigned)
+  
+  // Job details
+  location: string;              // Job location
+  budget: number;                // Budget in RWF
+  duration: number;              // Estimated duration in hours
+  
+  // Scheduling
+  scheduledDate: Date;           // Preferred job date
+  scheduledTime: string;         // Preferred job time (HH:MM format)
+  
+  // Status and metadata
+  status: 'open' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
+  priority: 'low' | 'medium' | 'high';
+  
+  // Application tracking
+  applicants: string[];          // Array of worker IDs who applied
+  
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+  completedAt?: Date;
+}
+```
 
-### 10. Household Dashboard
-- **File**: `app/household/dashboard/actions.ts`
-- **Status**: ✅ Complete
-- **Updates**:
-  - Updated top-rated workers query with schema fields
-  - Added fallback queries for backward compatibility
-  - Enhanced worker profile picture retrieval with schema structure
+**Indexes:**
+- `status + serviceType + createdAt`
+- `householdId + status + createdAt`
+- `workerId + status + scheduledDate`
+- `location + serviceType + status`
 
-### 11. Payment System
-- **Files**: 
-  - `app/household/payments/actions.ts`
-  - `app/admin/payments/actions.ts`
-  - `app/worker/earnings/actions.ts`
-- **Status**: ✅ Complete
-- **Updates**:
-  - Aligned payment records with `servicePayments` collection schema
-  - Updated date field references (`createdAt` vs `date`)
-  - Enhanced payment breakdown with schema fields (`netAmount`, `platformFee`, etc.)
-  - Updated Paypack integration fields
-  - Added proper transaction tracking
+### 5. Bookings Collection (`bookings`)
+**Purpose:** Store confirmed bookings between households and workers
 
-## Schema Compliance Features
+```typescript
+interface Booking {
+  id: string;                    // Auto-generated document ID
+  
+  // Relationships
+  jobId: string;                 // Reference to job document
+  householdId: string;           // Reference to household document
+  workerId: string;              // Reference to worker document
+  
+  // Booking details
+  serviceType: string;           // Type of service
+  status: 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
+  
+  // Scheduling
+  scheduledDate: Date;           // Confirmed date
+  scheduledTime: string;         // Confirmed time
+  duration: number;              // Duration in hours
+  
+  // Financial
+  amount: number;                // Total amount in RWF
+  
+  // Location and notes
+  location: string;              // Service location
+  notes?: string;                // Additional notes
+  
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+  startedAt?: Date;
+  completedAt?: Date;
+}
+```
 
-### Data Structure Alignment
-- ✅ All collections use standardized field names
-- ✅ Nested objects properly structured (personalInfo, workProfile, etc.)
-- ✅ Consistent timestamp handling (createdAt, updatedAt)
-- ✅ Proper status field standardization
+**Indexes:**
+- `householdId + status + scheduledDate`
+- `workerId + status + scheduledDate`
+- `status + scheduledDate`
 
-### Backward Compatibility
-- ✅ Fallback queries for old data structures
-- ✅ Graceful handling of missing schema fields
-- ✅ Progressive migration support
+### 6. Conversations Collection (`conversations`)
+**Purpose:** Store messaging conversations between users
 
-### Type Safety
-- ✅ TypeScript interfaces align with schema
-- ✅ Proper type checking for nested objects
-- ✅ Enhanced error handling for schema mismatches
+```typescript
+interface Conversation {
+  id: string;                    // Auto-generated document ID
+  
+  // Participants
+  participants: string[];        // Array of user IDs (exactly 2)
+  
+  // Last message info
+  lastMessage: string;           // Content of last message
+  lastMessageTimestamp: Date;    // Timestamp of last message
+  lastMessageSenderId: string;   // ID of last message sender
+  
+  // Unread counts per participant
+  unreadCount: {
+    [userId: string]: number;    // Unread message count for each participant
+  };
+  
+  // Metadata
+  type: 'job_inquiry' | 'booking' | 'general';
+  relatedJobId?: string;         // Related job ID if applicable
+  relatedBookingId?: string;     // Related booking ID if applicable
+  
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
 
-### Performance Optimization
-- ✅ Efficient queries using schema indexes
-- ✅ Proper field filtering and ordering
-- ✅ Optimized data retrieval patterns
+**Indexes:**
+- `participants (array) + lastMessageTimestamp`
 
-## Testing & Validation
+### 7. Messages Collection (`messages`)
+**Purpose:** Store individual messages within conversations
 
-### Schema Validation
-- ✅ All database operations tested with new schema
-- ✅ Data integrity maintained during transitions
-- ✅ Proper error handling for schema mismatches
+```typescript
+interface Message {
+  id: string;                    // Auto-generated document ID
+  
+  // Relationships
+  conversationId: string;        // Reference to conversation document
+  senderId: string;              // Sender's user ID
+  senderType: 'worker' | 'household' | 'admin';
+  
+  // Message content
+  content: string;               // Message text content
+  type: 'text' | 'image' | 'file' | 'system';
+  
+  // Attachments (if any)
+  attachments?: {
+    type: 'image' | 'file';
+    url: string;
+    name: string;
+    size: number;
+  }[];
+  
+  // Status
+  read: boolean;                 // Whether message has been read
+  
+  // Timestamps
+  timestamp: Date;               // When message was sent
+  readAt?: Date;                 // When message was read
+}
+```
 
-### Compatibility Testing
-- ✅ Old data structures still supported via fallbacks
-- ✅ New data structures properly implemented
-- ✅ Migration path validated
+**Indexes:**
+- `conversationId + timestamp`
+- `conversationId + read + timestamp`
 
-## Benefits Achieved
+### 8. Reviews Collection (`reviews`)
+**Purpose:** Store reviews and ratings for completed jobs
 
-### 1. Data Consistency
-- Standardized field names across all collections
-- Consistent data types and structures
-- Proper relationship modeling
+```typescript
+interface Review {
+  id: string;                    // Auto-generated document ID
+  
+  // Relationships
+  bookingId: string;             // Reference to booking document
+  householdId: string;           // Reviewer (household) ID
+  workerId: string;              // Reviewee (worker) ID
+  
+  // Review content
+  rating: number;                // Rating from 1-5
+  comment: string;               // Written review
+  
+  // Optional fields
+  wouldRecommend: boolean;       // Would recommend this worker
+  categories?: {                 // Category-specific ratings
+    punctuality: number;
+    quality: number;
+    communication: number;
+    value: number;
+  };
+  
+  // Timestamps
+  createdAt: Date;
+}
+```
 
-### 2. Maintainability
-- Clear separation of concerns in data organization
-- Easier debugging with structured field access
-- Better code organization with schema alignment
+**Indexes:**
+- `workerId + rating + createdAt`
+- `householdId + createdAt`
 
-### 3. Scalability
-- Optimized query patterns for better performance
-- Proper indexing strategy aligned with access patterns
-- Efficient data retrieval with minimal overhead
+### 9. Payments Collection (`payments`)
+**Purpose:** Store payment records and transaction history
 
-### 4. Developer Experience
-- Comprehensive documentation for all collections
-- Type-safe database operations
-- Clear data access patterns
+```typescript
+interface Payment {
+  id: string;                    // Auto-generated document ID
+  
+  // Relationships
+  bookingId: string;             // Reference to booking document
+  householdId: string;           // Payer ID
+  workerId: string;              // Payee ID
+  
+  // Payment details
+  amount: number;                // Payment amount in RWF
+  method: 'card' | 'mobile_money' | 'bank_transfer' | 'cash';
+  
+  // Status tracking
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'refunded';
+  
+  // External payment data
+  transactionId?: string;        // External transaction ID
+  paymentGateway?: string;       // Payment gateway used
+  phoneNumber?: string;          // Mobile money phone number
+  
+  // Fees and breakdown
+  platformFee: number;           // Platform commission
+  workerAmount: number;          // Amount worker receives
+  
+  // Timestamps
+  createdAt: Date;
+  processedAt?: Date;
+  completedAt?: Date;
+  refundedAt?: Date;
+}
+```
 
-## Next Steps
+**Indexes:**
+- `householdId + status + createdAt`
+- `workerId + status + createdAt`
+- `status + createdAt`
 
-### Immediate Actions
-1. Deploy updated code with schema alignment
-2. Monitor database operations for performance
-3. Validate data consistency across all collections
+### 10. Notifications Collection (`notifications`)
+**Purpose:** Store user notifications
 
-### Future Enhancements
-1. Implement data migration scripts for existing records
-2. Add comprehensive schema validation middleware
-3. Create automated testing for schema compliance
+```typescript
+interface Notification {
+  id: string;                    // Auto-generated document ID
+  
+  // Target user
+  userId: string;                // Recipient user ID
+  userType: 'worker' | 'household' | 'admin';
+  
+  // Notification content
+  title: string;                 // Notification title
+  message: string;               // Notification message
+  type: 'job_application' | 'booking_confirmed' | 'payment_received' | 
+        'message_received' | 'review_received' | 'system';
+  
+  // Status
+  read: boolean;                 // Whether notification has been read
+  
+  // Related data
+  relatedId?: string;            // Related document ID
+  relatedType?: string;          // Related document type
+  
+  // Actions
+  actionUrl?: string;            // URL to navigate to
+  
+  // Timestamps
+  createdAt: Date;
+  readAt?: Date;
+}
+```
 
-## Conclusion
+**Indexes:**
+- `userId + read + createdAt`
+- `userId + type + createdAt`
 
-The codebase has been successfully updated to align with the standardized Firestore database schema. All major database operations now use the new schema structure while maintaining backward compatibility. The updates provide better data organization, improved performance, and enhanced maintainability for the Househelp platform.
+## Data Relationships
 
-**Total Files Updated**: 12 files
-**Schema Collections Covered**: 8 collections (household, worker, admins, jobs, servicePayments, notifications, reviews, conversations, messages)
-**Backward Compatibility**: ✅ Maintained
-**Type Safety**: ✅ Enhanced
-**Performance**: ✅ Optimized
+### Primary Relationships
+1. **Worker ←→ Jobs**: One worker can be assigned to many jobs
+2. **Household ←→ Jobs**: One household can create many jobs
+3. **Worker ←→ Bookings**: One worker can have many bookings
+4. **Household ←→ Bookings**: One household can have many bookings
+5. **Job → Booking**: One job can have one booking (1:1)
+6. **Booking → Review**: One booking can have one review (1:1)
+7. **Booking → Payment**: One booking can have multiple payments (1:many)
+
+### Secondary Relationships
+1. **Users ←→ Conversations**: Users participate in many conversations
+2. **Conversation ←→ Messages**: One conversation has many messages
+3. **Users ←→ Notifications**: Users receive many notifications
+
+## Security Rules Summary
+
+### Authentication Requirements
+- All collections require authenticated users
+- Users can only access their own data or data they're authorized to see
+- Admins have elevated access across all collections
+
+### Data Validation
+- Email format validation
+- Phone number format validation
+- Required field validation
+- Data type validation
+- Business logic validation (e.g., rating 1-5)
+
+### Access Control
+- **Workers**: Can read all worker profiles, manage their own profile
+- **Households**: Can read all worker profiles, manage their own data
+- **Admins**: Full access to all collections
+- **Cross-user access**: Limited to shared resources (conversations, bookings)
+
+## Performance Optimization
+
+### Indexing Strategy
+- Composite indexes for common query patterns
+- Array-contains indexes for array fields
+- Descending indexes for timestamp-based queries
+
+### Query Patterns
+- Paginated queries for large result sets
+- Cached queries for frequently accessed data
+- Real-time listeners for messaging and notifications
+
+## Data Integrity
+
+### Referential Integrity
+- Foreign key relationships maintained through application logic
+- Orphaned record prevention through proper deletion cascades
+- Data consistency checks in business logic
+
+### Backup and Recovery
+- Automated daily backups
+- Point-in-time recovery capability
+- Data export functionality for compliance
+
+## Monitoring and Analytics
+
+### Performance Metrics
+- Query performance monitoring
+- Index usage analysis
+- Data growth tracking
+
+### Business Metrics
+- User engagement tracking
+- Feature usage analytics
+- Revenue and transaction monitoring
+
+This schema ensures scalability, data integrity, and optimal performance for the HouseHelp application while maintaining security and compliance with best practices.

@@ -1,21 +1,12 @@
-import type { Config } from "tailwindcss";
+import type { Config } from "tailwindcss"
 
 const config: Config = {
-  darkMode: ["class"],
   content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
-  prefix: "",
   theme: {
-    container: {
-      center: true,
-      padding: "2rem",
-      screens: {
-        "2xl": "1400px",
-      },
-    },
     extend: {
       colors: {
         border: "hsl(var(--border))",
@@ -57,9 +48,6 @@ const config: Config = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
-      fontFamily: {
-        body: ["var(--font-inter)", "system-ui", "sans-serif"],
-      },
       keyframes: {
         "accordion-down": {
           from: { height: "0" },
@@ -77,6 +65,17 @@ const config: Config = {
     },
   },
   plugins: [require("tailwindcss-animate")],
-};
-
-export default config;
+  // Performance optimizations
+  corePlugins: {
+    preflight: true, // Keep only if needed
+  },
+  // Purge unused styles aggressively
+  safelist: [
+    // Only include essential classes that might be generated dynamically
+    'text-red-500',
+    'text-green-500',
+    'text-yellow-500',
+    'text-blue-500',
+  ],
+}
+export default config

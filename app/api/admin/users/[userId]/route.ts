@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, updateDoc, Timestamp, addDoc, collection } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, Timestamp, addDoc, collection, deleteDoc } from 'firebase/firestore';
 import { z } from 'zod';
 
 // Schema for user status update
@@ -166,6 +166,60 @@ export async function PUT(
     return NextResponse.json({
       success: false,
       error: 'Failed to update user'
+    }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ userId: string }> }
+) {
+  try {
+    const { userId } = await params;
+    const { searchParams } = new URL(request.url);
+    const userType = searchParams.get('type') || 'worker';
+
+    if (!userId) {
+      return NextResponse.json({
+        success: false,
+        error: 'User ID is required'
+      }, { status: 400 });
+    }
+
+    // Determine collection name
+    const collectionName = userType === 'admin' ? 'admins' : userType;
+
+    const userRef = doc(db, collectionName, userId);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      return NextResponse.json({
+        success: false,
+        error: 'User not found'
+      }, { status: 404 });
+    }
+
+    await deleteDoc(userRef);
+
+    // Create audit log
+    await addDoc(collection(db, 'adminLogs'), {
+      action: 'user_deleted',
+      targetUserId: userId,
+      targetUserType: userType,
+      timestamp: Timestamp.now(),
+      adminId: 'system', // In real app, get admin ID from auth
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'User deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to delete user'
     }, { status: 500 });
   }
 }
