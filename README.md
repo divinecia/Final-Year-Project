@@ -122,17 +122,6 @@ src/
 4. Run tests and linting
 5. Submit a pull request
 
-## Deployment
-
-The application can be deployed to any platform that supports Next.js:
-
-- Vercel (recommended)
-- Netlify
-- Railway
-- DigitalOcean App Platform
-
-Make sure to set up your environment variables in your deployment platform.
-
 ## License
 
 This project is licensed under the MIT License.
