@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { StatusBadge, StatusSelect } from "@/components/ui/status-components"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal, Search, FileDown, Trash2, Eye, Sparkles } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -79,20 +80,7 @@ export default function AdminJobsPage() {
         }
     };
     
-    const getStatusBadge = (status: Job['status']) => {
-        switch (status) {
-            case 'open':
-                return <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200">Open</Badge>;
-            case 'assigned':
-                return <Badge variant="default" className="bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200">Assigned</Badge>;
-            case 'completed':
-                return <Badge variant="default" className="bg-green-100 text-green-800 border-green-200 hover:bg-green-200">Completed</Badge>;
-            case 'cancelled':
-                return <Badge variant="destructive" className="bg-red-100 text-red-800 border-red-200 hover:bg-red-200">Cancelled</Badge>;
-            default:
-                return <Badge variant="outline">Unknown</Badge>;
-        }
-    };
+    // Remove the hardcoded status badge function - now using StatusBadge component
     
     const getServiceName = (serviceId: string) => {
         return serviceOptions.find(s => s.id === serviceId)?.label || serviceId;
@@ -153,7 +141,7 @@ export default function AdminJobsPage() {
                                             <TableCell>{job.householdName}</TableCell>
                                             <TableCell className="hidden md:table-cell">{job.workerName || "Unassigned"}</TableCell>
                                             <TableCell className="hidden lg:table-cell">{getServiceName(job.serviceType)}</TableCell>
-                                            <TableCell>{getStatusBadge(job.status)}</TableCell>
+                                            <TableCell><StatusBadge statusId={job.status} type="job" /></TableCell>
                                             <TableCell>
                                                 <AlertDialog>
                                                     <DropdownMenu>

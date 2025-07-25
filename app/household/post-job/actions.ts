@@ -12,6 +12,8 @@ export const jobPostSchema = z.object({
   serviceType: z.string({ required_error: "Please select a service type." }),
   jobDescription: z.string().min(20, "Description must be at least 20 characters to be clear."),
   schedule: z.string().min(5, "Please provide schedule details."),
+  district: z.string({ required_error: "Please select a district." }),
+  sector: z.string({ required_error: "Please select a sector." }),
   salary: z.coerce.number().min(1, "Please enter a valid salary."),
   payFrequency: z.string({ required_error: "Please select a pay frequency." }),
   benefits: z.object({
@@ -42,6 +44,12 @@ export async function createJobPost(householdId: string, data: JobPostFormData) 
       jobDescription: data.jobDescription,
       schedule: data.schedule,
       
+      // Location information
+      location: {
+        district: data.district,
+        sector: data.sector,
+      },
+      
       // Compensation details
       compensation: {
         salary: data.salary,
@@ -52,7 +60,7 @@ export async function createJobPost(householdId: string, data: JobPostFormData) 
       // Household information
       householdId,
       householdName: householdData.personalInfo?.fullName || householdData.fullName,
-      householdLocation: `${householdData.address?.sector || ''}, ${householdData.address?.district || ''}`,
+      householdLocation: `${data.sector}, ${data.district}`,
       
       // Status and metadata
       status: 'open' as const,

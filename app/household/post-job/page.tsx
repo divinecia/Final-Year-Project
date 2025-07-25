@@ -20,17 +20,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { Checkbox } from "@/components/ui/checkbox"
-import { serviceOptions } from "@/lib/services"
 import { Separator } from "@/components/ui/separator"
 import { createJobPost, type JobPostFormData, jobPostSchema } from "./actions"
 import { useAuth } from "@/hooks/use-auth"
 import { useRouter } from "next/navigation"
-
+import { getServiceOptions, getLocationOptions, type Service } from "@/lib/services-api"
+import { getPayFrequencyOptions } from "@/lib/system-config"
 
 export default function PostJobPage() {
   const { toast } = useToast();
   const { user } = useAuth();
   const router = useRouter();
+  const [services, setServices] = React.useState<Array<{ id: string; label: string; price: number }>>([]);
+  const [locations, setLocations] = React.useState<Array<{ 
+    district: string; 
+    province: string; 
+    sectors: Array<{ id: string; label: string }> 
+  }>>([]);
+  const [payFrequencies, setPayFrequencies] = React.useState<Array<{ id: string; label: string; description: string }>>([]);
+  const [selectedDistrict, setSelectedDistrict] = React.useState<string>('');
+  const [isLoading, setIsLoading] = React.useState(true);
 
   const form = useForm<JobPostFormData>({
     resolver: zodResolver(jobPostSchema),
@@ -39,6 +48,8 @@ export default function PostJobPage() {
       serviceType: undefined,
       jobDescription: "",
       schedule: "",
+      district: undefined,
+      sector: undefined,
       salary: 0,
       payFrequency: undefined,
       benefits: {
@@ -48,6 +59,54 @@ export default function PostJobPage() {
       },
     },
   });
+
+  // Load services and locations on component mount
+  React.useEffect(() => {
+    async function loadData() {
+      try {
+        setIsLoading(true);
+        const [servicesData, locationsData, payFrequenciesData] = await Promise.all([
+          getServiceOptions(),
+          getLocationOptions(),
+          getPayFrequencyOptions()
+        ]);
+        
+        setServices(servicesData);
+        setLocations(locationsData);
+        setPayFrequencies(payFrequenciesData);
+      } catch (error) {
+        console.error('Error loading data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load services and locations. Please refresh the page.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadData();
+  }, [toast]);
+
+  // Get current district's sectors
+  const currentSectors = React.useMemo(() => {
+    if (!selectedDistrict) return [];
+    const district = locations.find(loc => loc.district === selectedDistrict);
+    return district ? district.sectors : [];
+  }, [selectedDistrict, locations]);
+
+  // Update suggested salary when service type changes
+  const serviceType = form.watch('serviceType');
+  const selectedService = React.useMemo(() => {
+    return services.find(service => service.id === serviceType);
+  }, [serviceType, services]);
+
+  React.useEffect(() => {
+    if (selectedService) {
+      form.setValue('salary', selectedService.price);
+    }
+  }, [selectedService, form]);
 
   async function onSubmit(values: JobPostFormData) {
     if (!user) {
@@ -119,11 +178,22 @@ export default function PostJobPage() {
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl><SelectTrigger><SelectValue placeholder="Select the main service category" /></SelectTrigger></FormControl>
                       <SelectContent>
-                        {serviceOptions.map(service => (
-                          <SelectItem key={service.id} value={service.id}>{service.label}</SelectItem>
-                        ))}
+                        {isLoading ? (
+                          <SelectItem value="loading" disabled>Loading services...</SelectItem>
+                        ) : (
+                          services.map(service => (
+                            <SelectItem key={service.id} value={service.id}>
+                              {service.label} - {service.price.toLocaleString()} RWF/hour
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
+                    {selectedService && (
+                      <FormDescription>
+                        Base rate: {selectedService.price.toLocaleString()} RWF per hour
+                      </FormDescription>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -151,6 +221,79 @@ export default function PostJobPage() {
                   </FormItem>
                 )}
               />
+              
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Location</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="district"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>District</FormLabel>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            setSelectedDistrict(value);
+                            form.setValue('sector', ''); // Clear sector when district changes
+                          }} 
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select district" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {isLoading ? (
+                              <SelectItem value="loading" disabled>Loading districts...</SelectItem>
+                            ) : (
+                              locations.map(location => (
+                                <SelectItem key={location.district} value={location.district}>
+                                  {location.district} ({location.province})
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="sector"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Sector</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select sector" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {currentSectors.length === 0 ? (
+                              <SelectItem value="none" disabled>
+                                {selectedDistrict ? 'No sectors available' : 'Select district first'}
+                              </SelectItem>
+                            ) : (
+                              currentSectors.map(sector => (
+                                <SelectItem key={sector.id} value={sector.id}>
+                                  {sector.label}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+              
               <Separator />
 
               <div className="space-y-4">
@@ -176,10 +319,15 @@ export default function PostJobPage() {
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl><SelectTrigger><SelectValue placeholder="Select a frequency" /></SelectTrigger></FormControl>
                             <SelectContent>
-                                <SelectItem value="per_hour">Per Hour</SelectItem>
-                                <SelectItem value="per_day">Per Day</SelectItem>
-                                <SelectItem value="per_week">Per Week</SelectItem>
-                                <SelectItem value="per_month">Per Month</SelectItem>
+                            {isLoading ? (
+                              <SelectItem value="loading" disabled>Loading pay frequencies...</SelectItem>
+                            ) : (
+                              payFrequencies.map(frequency => (
+                                <SelectItem key={frequency.id} value={frequency.id}>
+                                  {frequency.label}
+                                </SelectItem>
+                              ))
+                            )}
                             </SelectContent>
                             </Select>
                             <FormMessage />

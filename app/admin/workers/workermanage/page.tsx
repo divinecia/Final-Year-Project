@@ -14,6 +14,7 @@ import { getWorkers, approveWorker, suspendWorker, deleteWorker, type Worker } f
 import { useToast } from "@/hooks/use-toast"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { cn } from "@/lib/utils"
+import { StatusBadge } from "@/components/ui/status-components"
 
 const SkeletonRow = () => (
     <TableRow>
@@ -107,20 +108,6 @@ export default function AdminWorkersManagePage() {
     }
 
 
-    const getStatusBadge = (status: Worker['status']) => {
-        switch (status) {
-            case 'active':
-                return <Badge variant="default" className="bg-green-100 text-green-800 border-green-200 hover:bg-green-200">Active</Badge>;
-            case 'pending':
-                return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200">Pending</Badge>;
-            case 'suspended':
-                return <Badge variant="destructive" className="bg-red-100 text-red-800 border-red-200 hover:bg-red-200">Suspended</Badge>;
-            default:
-                return <Badge variant="outline">Unknown</Badge>;
-        }
-    };
-
-
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -170,7 +157,7 @@ export default function AdminWorkersManagePage() {
                                         <TableCell className="font-medium">{worker.fullName}</TableCell>
                                         <TableCell>{worker.email}</TableCell>
                                         <TableCell>{worker.phone}</TableCell>
-                                        <TableCell>{getStatusBadge(worker.status)}</TableCell>
+                                        <TableCell><StatusBadge statusId={worker.status} type="user" /></TableCell>
                                         <TableCell>{worker.dateJoined}</TableCell>
                                         <TableCell>
                                             <AlertDialog>

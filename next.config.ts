@@ -2,12 +2,11 @@ import type {NextConfig} from 'next';
 import withPWA from 'next-pwa';
 
 const nextConfig: NextConfig = {
-  // Performance optimizations
+  // Essential optimizations only
   compress: true,
   poweredByHeader: false,
-  generateEtags: false,
   
-  // Build optimizations
+  // Build settings
   typescript: {
     ignoreBuildErrors: false,
   },
@@ -15,20 +14,13 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: false,
   },
   
-  // Faster builds in development
+  // Development optimizations
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
-    webpackBuildWorker: true,
   },
-  
-  // External packages optimization
-  serverExternalPackages: ['firebase-admin'],
   
   // Image optimizations
   images: {
-    formats: ['image/webp'],
-    deviceSizes: [640, 828, 1200, 1920],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256],
     remotePatterns: [
       {
         protocol: 'https',
@@ -36,21 +28,11 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       }
     ],
-    dangerouslyAllowSVG: false,
-    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   
   // Webpack optimizations
-  webpack: (config, { dev, isServer }) => {
-    // Fix for Genkit and handlebars
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      fs: false,
-      path: false,
-      os: false,
-    };
-
-    // Ignore problematic modules in client builds
+  webpack: (config, { isServer }) => {
+    // Only include essential fixes
     if (!isServer) {
       config.resolve.alias = {
         ...config.resolve.alias,
@@ -91,19 +73,6 @@ const withPWAConfig = withPWA({
   disable: process.env.NODE_ENV === 'development',
   register: true,
   skipWaiting: true,
-  runtimeCaching: [
-    {
-      urlPattern: /^https?.*/,
-      handler: 'NetworkFirst',
-      options: {
-        cacheName: 'offlineCache',
-        expiration: {
-          maxEntries: 200,
-          maxAgeSeconds: 24 * 60 * 60, // 24 hours
-        },
-      },
-    },
-  ],
 });
 
 export default withPWAConfig(nextConfig);

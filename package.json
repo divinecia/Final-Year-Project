@@ -18,6 +18,7 @@
     "typecheck:fast": "tsc --noEmit --skipLibCheck",
     "typecheck:watch": "tsc --noEmit --watch",
     "db:seed": "tsx src/scripts/seed.ts",
+    "db:seed-services": "tsx src/scripts/seed-services-locations.ts",
     "validate": "./validate-app.sh",
     "benchmark": "tsx benchmark-performance.ts",
     "perf": "npm run benchmark",

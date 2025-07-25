@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { StatusBadge } from "@/components/ui/status-components"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal, Search, FileDown, Eye } from "lucide-react"
@@ -52,14 +53,7 @@ export default function AdminPaymentsPage() {
         fetchPayments();
     }, [toast]);
 
-    const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'completed': return <Badge variant="default" className="bg-green-100 text-green-800">Completed</Badge>;
-            case 'pending': return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">Pending</Badge>;
-            case 'failed': return <Badge variant="destructive" className="bg-red-100 text-red-800">Failed</Badge>;
-            default: return <Badge variant="outline">Unknown</Badge>;
-        }
-    };
+
     
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'RWF', minimumFractionDigits: 0 }).format(amount).replace('RWF', 'RWF ');
@@ -120,7 +114,7 @@ export default function AdminPaymentsPage() {
                                                 <TableCell className="font-medium">{p.householdName}</TableCell>
                                                 <TableCell>{p.workerName}</TableCell>
                                                 <TableCell>{formatCurrency(p.amount)}</TableCell>
-                                                <TableCell>{getStatusBadge(p.status)}</TableCell>
+                                                <TableCell><StatusBadge statusId={p.status} type="payment" /></TableCell>
                                                 <TableCell>
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
@@ -174,7 +168,7 @@ export default function AdminPaymentsPage() {
                                                 <TableCell className="font-medium">{p.workerName}</TableCell>
                                                 <TableCell>{p.courseTitle}</TableCell>
                                                 <TableCell>{formatCurrency(p.amount)}</TableCell>
-                                                <TableCell>{getStatusBadge(p.status)}</TableCell>
+                                                <TableCell><StatusBadge statusId={p.status} type="payment" /></TableCell>
                                                 <TableCell>
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>

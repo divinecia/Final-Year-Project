@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/hooks/use-toast"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { getHouseholds, deleteHousehold, type Household } from "./actions"
+import { StatusBadge } from "@/components/ui/status-components"
 
 const SkeletonRow = () => (
     <TableRow>
@@ -82,17 +83,6 @@ export default function AdminHouseholdsPage() {
         }
     };
 
-    const getStatusBadge = (status: Household['status']) => {
-        switch (status) {
-            case 'active':
-                return <Badge variant="default" className="bg-green-100 text-green-800 border-green-200 hover:bg-green-200">Active</Badge>;
-            case 'suspended':
-                return <Badge variant="destructive" className="bg-red-100 text-red-800 border-red-200 hover:bg-red-200">Suspended</Badge>;
-            default:
-                return <Badge variant="outline">Unknown</Badge>;
-        }
-    };
-
 
     return (
         <div className="space-y-6">
@@ -148,7 +138,7 @@ export default function AdminHouseholdsPage() {
                                         <TableCell className="font-medium">{household.fullName}</TableCell>
                                         <TableCell>{household.email}</TableCell>
                                         <TableCell>{household.phone}</TableCell>
-                                        <TableCell>{getStatusBadge(household.status)}</TableCell>
+                                        <TableCell><StatusBadge statusId={household.status} type="user" /></TableCell>
                                         <TableCell>{household.dateJoined}</TableCell>
                                         <TableCell>
                                             <AlertDialog>
