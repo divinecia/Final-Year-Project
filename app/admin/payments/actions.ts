@@ -26,7 +26,7 @@ export type TrainingPayment = {
 export async function getServicePayments(): Promise<ServicePayment[]> {
   try {
     const paymentsCollection = collection(db, 'servicePayments');
-    const q = query(paymentsCollection, orderBy('date', 'desc'));
+    const q = query(paymentsCollection, orderBy('createdAt', 'desc'));
     const querySnapshot = await getDocs(q);
 
     if (querySnapshot.empty) {
@@ -35,7 +35,8 @@ export async function getServicePayments(): Promise<ServicePayment[]> {
 
     return querySnapshot.docs.map(doc => {
       const data = doc.data();
-      const date = data.date as Timestamp;
+      // Use schema-aligned date field
+      const date = data.createdAt as Timestamp || data.date as Timestamp;
       return {
         id: doc.id,
         date: date?.toDate().toLocaleDateString() || '',

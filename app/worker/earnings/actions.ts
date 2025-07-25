@@ -28,7 +28,7 @@ export async function getWorkerEarnings(workerId: string): Promise<EarningsSumma
         const q = query(
             paymentsCollection, 
             where('workerId', '==', workerId), 
-            orderBy('date', 'desc')
+            orderBy('createdAt', 'desc')
         );
         const querySnapshot = await getDocs(q);
 
@@ -41,13 +41,15 @@ export async function getWorkerEarnings(workerId: string): Promise<EarningsSumma
 
         querySnapshot.forEach(doc => {
             const data = doc.data();
-            const date = data.date as Timestamp;
+            // Use schema-aligned date field
+            const date = data.createdAt as Timestamp || data.date as Timestamp;
             const earning: Earning = {
                 id: doc.id,
                 date: date?.toDate().toLocaleDateString() || '',
                 jobId: data.jobId || 'N/A',
                 householdName: data.householdName || 'N/A',
-                netAmount: data.amount || 0, // Assuming amount is net for now
+                // Use netAmount from schema, fallback to amount
+                netAmount: data.netAmount || data.amount || 0,
                 status: data.status || 'pending',
             };
 
@@ -55,7 +57,7 @@ export async function getWorkerEarnings(workerId: string): Promise<EarningsSumma
 
             if (data.status === 'completed') {
                 summary.totalEarnings += earning.netAmount;
-                if (date.toDate() >= startOfMonth) {
+                if (date && date.toDate() >= startOfMonth) {
                     summary.monthEarnings += earning.netAmount;
                 }
             }

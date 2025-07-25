@@ -4,6 +4,7 @@
 import { db } from '@/lib/firebase';
 import { collection, addDoc, doc, getDoc, Timestamp } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
+import { createNotification } from '@/lib/notifications';
 import * as z from 'zod';
 
 export const jobPostSchema = z.object({
@@ -33,24 +34,58 @@ export async function createJobPost(householdId: string, data: JobPostFormData) 
 
     const householdData = householdSnap.data();
 
+    // Create job data aligned with schema
     const jobData = {
-      ...data,
+      // Basic job information
+      jobTitle: data.jobTitle,
+      serviceType: data.serviceType,
+      jobDescription: data.jobDescription,
+      schedule: data.schedule,
+      
+      // Compensation details
+      compensation: {
+        salary: data.salary,
+        payFrequency: data.payFrequency,
+        benefits: data.benefits,
+      },
+      
+      // Household information
       householdId,
-      householdName: householdData.fullName,
-      householdLocation: `${householdData.address.sector}, ${householdData.address.district}`,
+      householdName: householdData.personalInfo?.fullName || householdData.fullName,
+      householdLocation: `${householdData.address?.sector || ''}, ${householdData.address?.district || ''}`,
+      
+      // Status and metadata
       status: 'open' as const,
       createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+      
+      // Worker assignment (initially null)
       workerId: null,
       workerName: null,
+      
+      // Application tracking
       applications: [],
+      
+      // Reviews (initially empty)
+      reviews: [],
     };
 
-    await addDoc(collection(db, 'jobs'), jobData);
+    const jobDoc = await addDoc(collection(db, 'jobs'), jobData);
+    
+    // Create notification for household about successful job posting
+    await createNotification(
+      householdId,
+      'household',
+      'Job Posted Successfully',
+      `Your job "${data.jobTitle}" has been posted and is now visible to workers.`,
+      'success',
+      jobDoc.id
+    );
     
     revalidatePath('/household/post-job');
     revalidatePath('/admin/jobs');
     
-    return { success: true };
+    return { success: true, jobId: jobDoc.id };
   } catch (error) {
     console.error("Error creating job post: ", error);
     return { success: false, error: 'Failed to create job post.' };

@@ -26,22 +26,30 @@ export async function getWorkerDashboardStats(workerId: string): Promise<WorkerD
         const upcomingJobsQuery = query(collection(db, 'jobs'), where('workerId', '==', workerId), where('status', '==', 'assigned'));
         const upcomingJobsSnap = await getDocs(upcomingJobsQuery);
 
-        // Get rating from the worker's profile
+        // Get rating from the worker's profile using the schema structure
         const workerRef = doc(db, 'worker', workerId);
         const workerSnap = await getDoc(workerRef);
-        const rating = workerSnap.exists() ? workerSnap.data().rating || 0 : 0;
+        let rating = 0;
+        if (workerSnap.exists()) {
+            const workerData = workerSnap.data();
+            rating = workerData.performance?.averageRating || workerData.rating || 0;
+        }
         
-        // Calculate this month's earnings
+        // Calculate this month's earnings using the schema structure
         const now = new Date();
         const startOfMonth = Timestamp.fromDate(new Date(now.getFullYear(), now.getMonth(), 1));
         const paymentsQuery = query(
             collection(db, 'servicePayments'),
             where('workerId', '==', workerId),
             where('status', '==', 'completed'),
-            where('date', '>=', startOfMonth)
+            where('createdAt', '>=', startOfMonth)
         );
         const paymentsSnap = await getDocs(paymentsQuery);
-        const monthEarnings = paymentsSnap.docs.reduce((sum, doc) => sum + (doc.data().amount || 0), 0);
+        const monthEarnings = paymentsSnap.docs.reduce((sum, doc) => {
+            const data = doc.data();
+            // Use netAmount from schema, fallback to amount
+            return sum + (data.netAmount || data.amount || 0);
+        }, 0);
 
         return {
             jobInvitations: openJobsSnap.size,
@@ -76,8 +84,9 @@ export async function getNewJobOpportunities(): Promise<Job[]> {
         householdLocation: data.householdLocation || 'N/A',
         serviceType: data.serviceType || 'N/A',
         status: data.status,
-        salary: data.salary || 0,
-        payFrequency: data.payFrequency || 'N/A',
+        // Access salary from compensation object according to schema
+        salary: data.compensation?.salary || data.salary || 0,
+        payFrequency: data.compensation?.payFrequency || data.payFrequency || 'N/A',
       } as Job;
     });
   } catch (error) {

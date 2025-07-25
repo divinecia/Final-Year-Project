@@ -41,42 +41,57 @@ export async function registerWorker(formData: FormData) {
         fullName: formData.fullName,
         phone: formData.phone,
         email: formData.email,
-        status: 'pending' as const,
-        dateJoined: Timestamp.now(),
+        
+        // Personal Information
         dob: Timestamp.fromDate(formData.dob),
         gender: formData.gender,
         nationalId: formData.nationalId,
+        
+        // Address
         district: formData.district,
         sector: formData.sector,
         address: formData.address,
+        
+        // Emergency Contact
         emergencyContact: {
             name: formData.emergencyContactName,
             phone: formData.emergencyContactPhone,
             relationship: formData.emergencyContactRelationship,
         },
+        
+        // Professional Information
         experienceYears: formData.experience[0] || 0,
         bio: formData.description || '',
         skills: formData.services,
         languages: formData.languages,
-        availability: {
-            days: formData.availableDays,
-            hours: formData.preferredHours,
-            type: formData.flexibility,
-            preferences: [
-                ...(formData.oneTimeJobs ? ['one-time'] : []),
-                ...(formData.recurringJobs ? ['recurring'] : []),
-                ...(formData.emergencyServices ? ['emergency'] : []),
-            ],
-        },
+        previousEmployers: formData.previousEmployers || '',
+        
+        // Availability & Preferences
+        availableDays: formData.availableDays || [],
+        preferredHours: formData.preferredHours || '',
+        flexibility: formData.flexibility || 'full-time',
+        oneTimeJobs: formData.oneTimeJobs || false,
+        recurringJobs: formData.recurringJobs || false,
+        emergencyServices: formData.emergencyServices || false,
+        travelDistance: formData.travelDistance || [5],
+        hourlyRate: formData.hourlyRate || [500, 1000],
+        
+        // Profile & Media
+        profilePictureUrl: profilePictureUrl,
+        certificatesUrl: null, // Will be added later if needed
+        idFrontUrl: idFrontUrl,
+        idBackUrl: idBackUrl,
+        selfieUrl: selfieUrl,
+        
+        // Performance Metrics
         rating: 0,
         reviewsCount: 0,
-        hourlyRate: formData.hourlyRate[0] || 500,
-        profilePictureUrl: profilePictureUrl,
-        documents: {
-            idFrontUrl: idFrontUrl,
-            idBackUrl: idBackUrl,
-            selfieUrl: selfieUrl,
-        },
+        jobsCompleted: 0,
+        
+        // System Fields
+        dateJoined: Timestamp.now(),
+        status: 'pending' as const,
+        verificationStatus: 'pending' as const,
     };
 
     const workerDocRef = doc(db, 'worker', userId);

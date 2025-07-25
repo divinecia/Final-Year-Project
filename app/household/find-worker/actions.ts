@@ -35,6 +35,7 @@ export async function getActiveWorkers(): Promise<Worker[]> {
         reviewsCount: data.reviewsCount || 0,
         skills: data.skills || [],
         status: data.status,
+        hourlyRate: data.hourlyRate ? (Array.isArray(data.hourlyRate) ? data.hourlyRate[0] : data.hourlyRate) : undefined,
       } as Worker;
     });
 

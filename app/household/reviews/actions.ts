@@ -51,7 +51,6 @@ export async function getPendingReviews(householdId: string): Promise<PendingRev
             jobsCollection, 
             where('householdId', '==', householdId),
             where('status', '==', 'completed'),
-            where('review', '==', null), // Assuming 'review' field is added upon review submission
             orderBy('createdAt', 'desc')
         );
 
@@ -61,18 +60,35 @@ export async function getPendingReviews(householdId: string): Promise<PendingRev
             return [];
         }
 
-        return querySnapshot.docs.map(doc => {
-            const data = doc.data();
-            const createdAt = data.createdAt as Timestamp;
-            return {
-                jobId: doc.id,
-                jobTitle: data.jobTitle || 'N/A',
-                serviceDate: createdAt?.toDate().toLocaleDateString() || '',
-                workerId: data.workerId,
-                workerName: data.workerName || 'N/A',
-                workerProfilePictureUrl: data.workerProfilePictureUrl || 'https://placehold.co/100x100.png',
-            };
-        });
+        const pendingReviews: PendingReview[] = [];
+
+        for (const jobDoc of querySnapshot.docs) {
+            const jobData = jobDoc.data();
+            
+            // Check if a review already exists for this job
+            const reviewsCollection = collection(db, 'reviews');
+            const reviewQuery = query(
+                reviewsCollection,
+                where('jobId', '==', jobDoc.id),
+                where('householdId', '==', householdId)
+            );
+            const existingReviews = await getDocs(reviewQuery);
+
+            // Only include jobs that don't have reviews yet
+            if (existingReviews.empty && jobData.workerId) {
+                const createdAt = jobData.createdAt as Timestamp;
+                pendingReviews.push({
+                    jobId: jobDoc.id,
+                    jobTitle: jobData.jobTitle || 'N/A',
+                    serviceDate: createdAt?.toDate().toLocaleDateString() || '',
+                    workerId: jobData.workerId,
+                    workerName: jobData.workerName || 'N/A',
+                    workerProfilePictureUrl: jobData.workerProfilePictureUrl || 'https://placehold.co/100x100.png',
+                });
+            }
+        }
+
+        return pendingReviews;
     } catch (error) {
         console.error("Error fetching pending reviews: ", error);
         return [];
@@ -93,34 +109,47 @@ export async function submitReview(
     try {
         const batch = writeBatch(db);
 
-        // 1. Update the job with the review
+        // Get job and worker details for the review
         const jobRef = doc(db, 'jobs', jobId);
-        batch.update(jobRef, {
-            review: {
-                rating,
-                comment,
-                createdAt: Timestamp.now(),
-                householdId: householdId,
-            }
-        });
-
-        // 2. Update the worker's aggregate rating
+        const jobSnap = await getDoc(jobRef);
         const workerRef = doc(db, 'worker', workerId);
         const workerSnap = await getDoc(workerRef);
-        if (workerSnap.exists()) {
-            const workerData = workerSnap.data();
-            const currentRating = workerData.rating || 0;
-            const reviewsCount = workerData.reviewsCount || 0;
-            
-            const newReviewsCount = reviewsCount + 1;
-            const newTotalRating = (currentRating * reviewsCount) + rating;
-            const newAverageRating = newTotalRating / newReviewsCount;
 
-            batch.update(workerRef, {
-                rating: newAverageRating,
-                reviewsCount: newReviewsCount,
-            });
+        if (!jobSnap.exists() || !workerSnap.exists()) {
+            return { success: false, error: "Job or worker not found." };
         }
+
+        const jobData = jobSnap.data();
+        const workerData = workerSnap.data();
+
+        // 1. Create the review document in the reviews collection
+        const reviewsCollection = collection(db, 'reviews');
+        const reviewData = {
+            rating,
+            comment,
+            jobId,
+            householdId,
+            workerId,
+            workerName: workerData.fullName || 'N/A',
+            jobTitle: jobData.jobTitle || 'N/A',
+            serviceDate: jobData.createdAt?.toDate().toLocaleDateString() || new Date().toLocaleDateString(),
+            createdAt: Timestamp.now(),
+        };
+        
+        await addDoc(reviewsCollection, reviewData);
+
+        // 2. Update the worker's aggregate rating
+        const currentRating = workerData.rating || 0;
+        const reviewsCount = workerData.reviewsCount || 0;
+        
+        const newReviewsCount = reviewsCount + 1;
+        const newTotalRating = (currentRating * reviewsCount) + rating;
+        const newAverageRating = newTotalRating / newReviewsCount;
+
+        batch.update(workerRef, {
+            rating: newAverageRating,
+            reviewsCount: newReviewsCount,
+        });
         
         await batch.commit();
         
@@ -151,11 +180,10 @@ export async function getPublishedReviews(householdId: string): Promise<Publishe
     if (!householdId) return [];
 
     try {
-        const jobsCollection = collection(db, 'jobs');
+        const reviewsCollection = collection(db, 'reviews');
         const q = query(
-            jobsCollection, 
+            reviewsCollection, 
             where('householdId', '==', householdId),
-            where('status', '==', 'completed'),
             orderBy('createdAt', 'desc')
         );
 
@@ -164,18 +192,16 @@ export async function getPublishedReviews(householdId: string): Promise<Publishe
         const reviews: PublishedReview[] = [];
         querySnapshot.forEach(doc => {
             const data = doc.data();
-            if (data.review) { // Only include jobs that have a review
-                const reviewDate = data.review.createdAt as Timestamp;
-                reviews.push({
-                    id: doc.id,
-                    workerName: data.workerName || 'N/A',
-                    workerProfilePictureUrl: 'https://placehold.co/100x100.png',
-                    jobTitle: data.jobTitle || 'N/A',
-                    rating: data.review.rating,
-                    comment: data.review.comment,
-                    reviewDate: reviewDate?.toDate().toLocaleDateString() || '',
-                });
-            }
+            const reviewDate = data.createdAt as Timestamp;
+            reviews.push({
+                id: doc.id,
+                workerName: data.workerName || 'N/A',
+                workerProfilePictureUrl: 'https://placehold.co/100x100.png', // Can be enhanced later
+                jobTitle: data.jobTitle || 'N/A',
+                rating: data.rating,
+                comment: data.comment,
+                reviewDate: reviewDate?.toDate().toLocaleDateString() || '',
+            });
         });
         
         return reviews;

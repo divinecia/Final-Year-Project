@@ -19,53 +19,67 @@ import { revalidatePath } from 'next/cache';
 export type Message = {
     id: string;
     text: string;
+    type: 'text' | 'image' | 'file' | 'system';
+    conversationId: string;
     senderId: string;
     senderName: string;
-    senderType: 'household' | 'worker';
-    timestamp: Timestamp;
-    bookingId?: string;
+    senderType: 'household' | 'worker' | 'admin';
+    imageUrl?: string;
+    fileName?: string;
+    fileUrl?: string;
     read: boolean;
+    sentAt: Timestamp;
+    readAt?: Timestamp;
 };
 
-export type ChatRoom = {
+export type Conversation = {
     id: string;
-    householdId: string;
-    workerId: string;
-    householdName: string;
-    workerName: string;
-    bookingId?: string;
-    lastMessage?: string;
-    lastMessageTime?: Timestamp;
+    participants: string[];
+    participantTypes: string[];
+    jobId?: string;
+    jobTitle?: string;
+    lastMessage: string;
+    lastMessageTime: Timestamp;
+    lastMessageSender: string;
+    unreadCount: { [userId: string]: number };
     createdAt: Timestamp;
+    updatedAt: Timestamp;
 };
 
 export type NewMessage = {
     text: string;
     senderId: string;
     senderName: string;
-    senderType: 'household' | 'worker';
-    bookingId?: string;
+    senderType: 'household' | 'worker' | 'admin';
+    jobId?: string;
 };
 
-export async function getChatRooms(userId: string, userType: 'household' | 'worker'): Promise<ChatRoom[]> {
+export async function getConversations(userId: string, userType: 'household' | 'worker'): Promise<Conversation[]> {
     try {
-        const chatsCol = collection(db, 'chats');
-        const field = userType === 'household' ? 'householdId' : 'workerId';
-        const q = query(chatsCol, where(field, '==', userId), orderBy('lastMessageTime', 'desc'));
+        const conversationsCol = collection(db, 'conversations');
+        const q = query(
+            conversationsCol, 
+            where('participants', 'array-contains', userId), 
+            orderBy('lastMessageTime', 'desc')
+        );
         const querySnapshot = await getDocs(q);
         
-        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatRoom));
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Conversation));
 
     } catch (error) {
-        console.error("Error fetching chat rooms: ", error);
+        console.error("Error fetching conversations: ", error);
         return [];
     }
 }
 
-export async function getMessages(chatRoomId: string): Promise<Message[]> {
+export async function getMessages(conversationId: string): Promise<Message[]> {
     try {
-        const messagesCol = collection(db, 'chats', chatRoomId, 'messages');
-        const q = query(messagesCol, orderBy('timestamp', 'asc'));
+        const messagesCol = collection(db, 'messages');
+        const q = query(
+            messagesCol, 
+            where('conversationId', '==', conversationId),
+            orderBy('sentAt', 'asc')
+        );
         const querySnapshot = await getDocs(q);
         
         return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
@@ -76,48 +90,55 @@ export async function getMessages(chatRoomId: string): Promise<Message[]> {
     }
 }
 
-export async function createChatRoom(
-    householdId: string, 
-    workerId: string, 
-    householdName: string, 
-    workerName: string,
-    bookingId?: string
-): Promise<{ success: boolean; chatRoomId?: string; error?: string }> {
+export async function createConversation(
+    participantIds: string[], 
+    participantTypes: string[],
+    jobId?: string,
+    jobTitle?: string
+): Promise<{ success: boolean; conversationId?: string; error?: string }> {
     try {
-        // Check if chat room already exists
-        const chatsCol = collection(db, 'chats');
-        const existingChatQuery = query(
-            chatsCol, 
-            where('householdId', '==', householdId),
-            where('workerId', '==', workerId)
+        // Check if conversation already exists between these participants
+        const conversationsCol = collection(db, 'conversations');
+        const existingConversationQuery = query(
+            conversationsCol, 
+            where('participants', '==', participantIds.sort())
         );
-        const existingChats = await getDocs(existingChatQuery);
+        const existingConversations = await getDocs(existingConversationQuery);
         
-        if (!existingChats.empty) {
-            return { success: true, chatRoomId: existingChats.docs[0].id };
+        if (!existingConversations.empty) {
+            return { success: true, conversationId: existingConversations.docs[0].id };
         }
 
-        // Create new chat room
-        const docRef = await addDoc(chatsCol, {
-            householdId,
-            workerId,
-            householdName,
-            workerName,
-            bookingId,
-            createdAt: serverTimestamp(),
-            lastMessageTime: serverTimestamp(),
+        // Initialize unread count object
+        const unreadCount: { [userId: string]: number } = {};
+        participantIds.forEach(id => {
+            unreadCount[id] = 0;
         });
 
-        return { success: true, chatRoomId: docRef.id };
+        // Create new conversation
+        const docRef = await addDoc(conversationsCol, {
+            participants: participantIds.sort(),
+            participantTypes,
+            jobId,
+            jobTitle,
+            lastMessage: '',
+            lastMessageTime: serverTimestamp(),
+            lastMessageSender: '',
+            unreadCount,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+        });
+
+        return { success: true, conversationId: docRef.id };
 
     } catch (error) {
-        console.error("Error creating chat room: ", error);
-        return { success: false, error: "Failed to create chat room." };
+        console.error("Error creating conversation: ", error);
+        return { success: false, error: "Failed to create conversation." };
     }
 }
 
 export async function sendMessage(
-    chatRoomId: string, 
+    conversationId: string, 
     message: NewMessage
 ): Promise<{ success: boolean; error?: string }> {
     if (!message.senderId) {
@@ -128,20 +149,43 @@ export async function sendMessage(
     }
 
     try {
-        // Add message to subcollection
-        const messagesCol = collection(db, 'chats', chatRoomId, 'messages');
+        // Add message to messages collection
+        const messagesCol = collection(db, 'messages');
         await addDoc(messagesCol, {
-            ...message,
-            timestamp: serverTimestamp(),
+            text: message.text,
+            type: 'text',
+            conversationId,
+            senderId: message.senderId,
+            senderName: message.senderName,
+            senderType: message.senderType,
             read: false,
+            sentAt: serverTimestamp(),
         });
 
-        // Update chat room's last message info
-        const chatRoomRef = doc(db, 'chats', chatRoomId);
-        await updateDoc(chatRoomRef, {
-            lastMessage: message.text.substring(0, 100), // Truncate for preview
-            lastMessageTime: serverTimestamp(),
-        });
+        // Update conversation's last message info
+        const conversationRef = doc(db, 'conversations', conversationId);
+        const conversationDoc = await getDoc(conversationRef);
+        
+        if (conversationDoc.exists()) {
+            const conversationData = conversationDoc.data();
+            const currentUnreadCount = conversationData.unreadCount || {};
+            
+            // Increment unread count for all participants except sender
+            const updatedUnreadCount = { ...currentUnreadCount };
+            conversationData.participants.forEach((participantId: string) => {
+                if (participantId !== message.senderId) {
+                    updatedUnreadCount[participantId] = (updatedUnreadCount[participantId] || 0) + 1;
+                }
+            });
+
+            await updateDoc(conversationRef, {
+                lastMessage: message.text.substring(0, 100),
+                lastMessageTime: serverTimestamp(),
+                lastMessageSender: message.senderId,
+                unreadCount: updatedUnreadCount,
+                updatedAt: serverTimestamp(),
+            });
+        }
 
         revalidatePath(`/household/messaging`);
         revalidatePath(`/worker/messaging`);
@@ -155,23 +199,43 @@ export async function sendMessage(
 }
 
 export async function markMessagesAsRead(
-    chatRoomId: string, 
+    conversationId: string, 
     userId: string
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const messagesCol = collection(db, 'chats', chatRoomId, 'messages');
+        // Mark messages as read in the messages collection
+        const messagesCol = collection(db, 'messages');
         const q = query(
             messagesCol, 
+            where('conversationId', '==', conversationId),
             where('senderId', '!=', userId),
             where('read', '==', false)
         );
         const querySnapshot = await getDocs(q);
         
-        const updates = querySnapshot.docs.map((document) => 
-            updateDoc(document.ref, { read: true })
+        const messageUpdates = querySnapshot.docs.map((document) => 
+            updateDoc(document.ref, { 
+                read: true,
+                readAt: serverTimestamp()
+            })
         );
         
-        await Promise.all(updates);
+        await Promise.all(messageUpdates);
+
+        // Reset unread count for this user in the conversation
+        const conversationRef = doc(db, 'conversations', conversationId);
+        const conversationDoc = await getDoc(conversationRef);
+        
+        if (conversationDoc.exists()) {
+            const conversationData = conversationDoc.data();
+            const updatedUnreadCount = { ...conversationData.unreadCount };
+            updatedUnreadCount[userId] = 0;
+
+            await updateDoc(conversationRef, {
+                unreadCount: updatedUnreadCount,
+                updatedAt: serverTimestamp(),
+            });
+        }
 
         return { success: true };
 

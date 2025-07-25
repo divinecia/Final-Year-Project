@@ -2,8 +2,9 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where, orderBy, doc, updateDoc, getDoc, arrayUnion, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, doc, updateDoc, getDoc, arrayUnion, Timestamp } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
+import { createJobNotification } from '@/lib/notifications';
 
 export type Job = {
     id: string;
@@ -35,8 +36,9 @@ export async function getOpenJobs(): Promise<Job[]> {
         householdLocation: data.householdLocation || 'N/A',
         serviceType: data.serviceType || 'N/A',
         status: data.status,
-        salary: data.salary || 0,
-        payFrequency: data.payFrequency || 'N/A',
+        // Access salary from compensation object according to schema
+        salary: data.compensation?.salary || data.salary || 0,
+        payFrequency: data.compensation?.payFrequency || data.payFrequency || 'N/A',
       } as Job;
     });
   } catch (error) {
@@ -82,16 +84,16 @@ export async function applyForJob(jobId: string, workerId: string, coverLetter?:
             return { success: false, error: "You have already applied for this job." };
         }
         
-        // Create application object
+        // Create application object with schema-aligned structure
         const application = {
             workerId: workerId,
-            workerName: workerData.fullName || 'Worker',
-            workerEmail: workerData.email || '',
-            workerPhone: workerData.phone || '',
-            profilePictureUrl: workerData.profilePictureUrl || '',
-            services: workerData.services || [],
-            rating: workerData.rating || 0,
-            completedJobs: workerData.completedJobs || 0,
+            workerName: workerData.personalInfo?.fullName || workerData.fullName || 'Worker',
+            workerEmail: workerData.personalInfo?.email || workerData.email || '',
+            workerPhone: workerData.personalInfo?.phone || workerData.phone || '',
+            profilePictureUrl: workerData.personalInfo?.profilePictureUrl || workerData.profilePictureUrl || '',
+            services: workerData.workProfile?.services || workerData.services || [],
+            rating: workerData.performance?.averageRating || workerData.rating || 0,
+            completedJobs: workerData.performance?.completedJobs || workerData.completedJobs || 0,
             coverLetter: coverLetter || '',
             appliedAt: Timestamp.now(),
             status: 'pending'
@@ -103,21 +105,15 @@ export async function applyForJob(jobId: string, workerId: string, coverLetter?:
             updatedAt: Timestamp.now(),
         });
         
-        // Create notification for household
-        await addDoc(collection(db, 'notifications'), {
-            userId: jobData.householdId,
-            title: 'New Job Application',
-            description: `${workerData.fullName} has applied for your job: ${jobData.jobTitle}`,
-            type: 'job_application',
-            read: false,
-            createdAt: Timestamp.now(),
-            actionUrl: `/household/jobs/${jobId}/applications`,
-            metadata: {
-                jobId: jobId,
-                workerId: workerId,
-                workerName: workerData.fullName,
-            }
-        });
+        // Create notification for household using the notification service
+        await createJobNotification(
+            jobData.householdId,
+            'household',
+            jobId,
+            'New Job Application',
+            `${workerData.personalInfo?.fullName || workerData.fullName} has applied for your job: ${jobData.jobTitle}`,
+            'info'
+        );
         
         revalidatePath('/worker/jobs');
         

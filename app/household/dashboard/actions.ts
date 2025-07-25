@@ -9,8 +9,8 @@ export async function getTopRatedWorkers(): Promise<Worker[]> {
     const workersCollection = collection(db, 'worker');
     const q = query(
         workersCollection, 
-        where('status', '==', 'active'), 
-        orderBy('rating', 'desc'), 
+        where('accountStatus.isActive', '==', true), 
+        orderBy('performance.averageRating', 'desc'), 
         limit(3)
     );
     const querySnapshot = await getDocs(q);
@@ -23,18 +23,44 @@ export async function getTopRatedWorkers(): Promise<Worker[]> {
       const data = doc.data();
       return {
         id: doc.id,
-        fullName: data.fullName || 'No Name',
-        profilePictureUrl: data.profilePictureUrl || undefined,
-        rating: data.rating || 0,
-        reviewsCount: data.reviewsCount || 0,
-        skills: data.skills || [],
-        status: data.status,
+        fullName: data.personalInfo?.fullName || data.fullName || 'No Name',
+        profilePictureUrl: data.personalInfo?.profilePictureUrl || data.profilePictureUrl || undefined,
+        rating: data.performance?.averageRating || data.rating || 0,
+        reviewsCount: data.performance?.totalReviews || data.reviewsCount || 0,
+        skills: data.workProfile?.skills || data.skills || [],
+        status: data.accountStatus?.isActive ? 'active' : 'inactive',
       } as Worker;
     });
 
   } catch (error) {
     console.error("Error fetching top rated workers: ", error);
-    return [];
+    // Fallback to old structure if new structure fails
+    try {
+      const workersCollection = collection(db, 'worker');
+      const q = query(
+          workersCollection, 
+          where('status', '==', 'active'), 
+          orderBy('rating', 'desc'), 
+          limit(3)
+      );
+      const querySnapshot = await getDocs(q);
+      
+      return querySnapshot.docs.map(doc => {
+        const data = doc.data() as any;
+        return {
+          id: doc.id,
+          fullName: data.fullName || 'No Name',
+          profilePictureUrl: data.profilePictureUrl || undefined,
+          rating: data.rating || 0,
+          reviewsCount: data.reviewsCount || 0,
+          skills: data.skills || [],
+          status: data.status,
+        } as Worker;
+      });
+    } catch (fallbackError) {
+      console.error("Error with fallback query: ", fallbackError);
+      return [];
+    }
   }
 }
 
@@ -89,7 +115,11 @@ async function getWorkerProfilePicture(workerId?: string): Promise<string> {
         const workerDoc = await getDoc(doc(db, 'worker', workerId));
         if (workerDoc.exists()) {
             const workerData = workerDoc.data();
-            return workerData.profilePictureUrl || `https://ui-avatars.io/api/?name=${encodeURIComponent(workerData.fullName || 'Worker')}&background=3B82F6&color=ffffff&size=100`;
+            // Use schema-aligned structure for profile picture
+            const profilePicture = workerData.personalInfo?.profilePictureUrl || workerData.profilePictureUrl;
+            const fullName = workerData.personalInfo?.fullName || workerData.fullName || 'Worker';
+            
+            return profilePicture || `https://ui-avatars.io/api/?name=${encodeURIComponent(fullName)}&background=3B82F6&color=ffffff&size=100`;
         }
     } catch (error) {
         console.error('Error fetching worker profile picture:', error);

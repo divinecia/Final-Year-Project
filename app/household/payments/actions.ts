@@ -66,7 +66,7 @@ export async function getHouseholdPaymentHistory(householdId: string): Promise<P
         const q = query(
             paymentsCollection, 
             where('householdId', '==', householdId), 
-            orderBy('date', 'desc')
+            orderBy('createdAt', 'desc')
         );
         const querySnapshot = await getDocs(q);
 
@@ -76,7 +76,8 @@ export async function getHouseholdPaymentHistory(householdId: string): Promise<P
 
         return querySnapshot.docs.map(doc => {
             const data = doc.data();
-            const date = data.date as Timestamp;
+            // Use schema-aligned date field
+            const date = data.createdAt as Timestamp || data.date as Timestamp;
             return {
                 id: doc.id,
                 date: date?.toDate().toLocaleDateString() || new Date().toLocaleDateString(),
@@ -85,7 +86,7 @@ export async function getHouseholdPaymentHistory(householdId: string): Promise<P
                 amount: Number(data.amount) || 0,
                 status: data.status || 'pending',
                 paymentMethod: data.paymentMethod || 'mobile_money',
-                transactionId: data.transactionId || '',
+                transactionId: data.paypackTransactionId || data.transactionId || '',
             } as Payment;
         });
 
@@ -204,17 +205,37 @@ export async function processPayment(
             workerId = mostRecentJob?.workerId || `worker_${Date.now()}`;
         }
         
+        // Create payment record aligned with schema
         const paymentRecord = {
-            householdId: householdId,
+            // Payment Details
+            amount: paymentData.amount,
+            currency: 'RWF',
+            paymentMethod: paymentData.paymentMethod || 'mobile_money',
+            
+            // Transaction References
             jobId: jobId,
+            householdId: householdId,
             workerId: workerId,
+            
+            // Worker and Service Info
             workerName: paymentData.workerName,
             serviceType: paymentData.serviceType,
-            amount: paymentData.amount,
-            date: Timestamp.now(),
+            
+            // Paypack Integration
+            paypackTransactionId: transactionId,
+            paypackStatus: 'pending',
+            
+            // Payment Status
             status: 'pending' as const,
-            transactionId: transactionId,
-            paymentMethod: paymentData.paymentMethod || 'mobile_money',
+            
+            // Breakdown
+            serviceAmount: paymentData.amount * 0.92, // Assuming 8% platform fee
+            platformFee: paymentData.amount * 0.08,
+            netAmount: paymentData.amount * 0.92,
+            
+            // Timestamps
+            initiatedAt: Timestamp.now(),
+            createdAt: Timestamp.now(),
         };
         await setDoc(doc(db, 'servicePayments', transactionId), paymentRecord);
         revalidatePath('/household/payments');
@@ -240,6 +261,7 @@ export async function processPayment(
             await updateDoc(doc(db, 'servicePayments', transactionId), {
                 status: 'completed',
                 completedAt: Timestamp.now(),
+                paypackStatus: 'completed',
                 cardDetails: {
                     last4: '****',
                     brand: 'visa',
@@ -267,6 +289,7 @@ export async function processPayment(
 
             await updateDoc(doc(db, 'servicePayments', transactionId), {
                 status: 'pending_verification',
+                paypackStatus: 'pending_verification',
                 bankDetails: bankDetails,
                 instructions: 'Please complete the bank transfer and provide transaction reference for verification.'
             });
