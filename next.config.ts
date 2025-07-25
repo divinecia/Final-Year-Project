@@ -36,7 +36,6 @@ const nextConfig: NextConfig = {
     if (!isServer) {
       config.resolve.alias = {
         ...config.resolve.alias,
-        '@opentelemetry/winston-transport': false,
         'handlebars': false,
       };
     }

@@ -52,20 +52,16 @@ export async function middleware(request: NextRequest) {
   // Redirect to appropriate login if no session and accessing protected paths
   if (!hasSession) {
     if (protectedWorkerPaths.some(p => pathname.startsWith(p))) {
-        console.log(`[Middleware] Redirecting to /worker/login for ${pathname} - took ${Date.now() - start}ms`);
         return NextResponse.redirect(new URL('/worker/login', request.url))
     }
     if (protectedHouseholdPaths.some(p => pathname.startsWith(p))) {
-        console.log(`[Middleware] Redirecting to /household/login for ${pathname} - took ${Date.now() - start}ms`);
         return NextResponse.redirect(new URL('/household/login', request.url))
     }
     if (protectedAdminPaths.some(p => pathname.startsWith(p))) {
-        console.log(`[Middleware] Redirecting to /admin/login for ${pathname} - took ${Date.now() - start}ms`);
         return NextResponse.redirect(new URL('/admin/login', request.url))
     }
   }
 
-  console.log(`[Middleware] Passing through ${pathname} - took ${Date.now() - start}ms`);
   return NextResponse.next()
 }
 
