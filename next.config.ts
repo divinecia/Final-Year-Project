@@ -27,7 +27,7 @@ const nextConfig: NextConfig = {
   // External packages optimization
   serverExternalPackages: ['firebase-admin'],
   
-  // Image optimizations (simplified for better performance)
+  // Image optimizations (optimized for cloud environments)
   images: {
     formats: ['image/webp'],
     deviceSizes: [640, 828, 1200, 1920],
@@ -41,6 +41,8 @@ const nextConfig: NextConfig = {
     ],
     dangerouslyAllowSVG: false,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    // Disable image optimization for build issues in Codespaces
+    unoptimized: process.env.CODESPACES ? true : false,
   },
   
   // Webpack optimizations
