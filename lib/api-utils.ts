@@ -25,32 +25,54 @@ export class ApiError extends Error {
   }
 }
 
+const apiResponseCache = new Map<string, any>();
+
 export async function handleApiResponse<T>(
-  fn: () => Promise<T>
+  fn: () => Promise<T>,
+  cacheKey?: string,
+  cacheTTL = 60000 // 1 minute cache by default
 ): Promise<ApiResponse<T>> {
   try {
-    const result = await fn()
+    if (cacheKey && apiResponseCache.has(cacheKey)) {
+      const cached = apiResponseCache.get(cacheKey);
+      if (Date.now() - cached.timestamp < cacheTTL) {
+        return {
+          success: true,
+          data: cached.data,
+          message: 'Operation completed successfully (from cache)'
+        };
+      } else {
+        apiResponseCache.delete(cacheKey);
+      }
+    }
+
+    const result = await fn();
+
+    if (cacheKey) {
+      apiResponseCache.set(cacheKey, { data: result, timestamp: Date.now() });
+    }
+
     return {
       success: true,
       data: result,
       message: 'Operation completed successfully'
-    }
+    };
   } catch (error) {
-    console.error('API Error:', error)
+    console.error('API Error:', error);
     
     if (error instanceof ApiError) {
       return {
         success: false,
         error: error.message,
         message: error.message
-      }
+      };
     }
     
     return {
       success: false,
       error: 'An unexpected error occurred',
       message: 'Something went wrong. Please try again.'
-    }
+    };
   }
 }
 

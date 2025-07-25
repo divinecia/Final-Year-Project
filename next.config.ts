@@ -30,6 +30,7 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       }
     ],
+    minimumCacheTTL: 60 * 60 * 24, // Cache images for 24 hours
   },
   
   // External packages that should not be bundled
@@ -42,7 +43,7 @@ const nextConfig: NextConfig = {
     'handlebars',
   ],
   
-  // Webpack configuration for compatibility
+  // Webpack configuration for compatibility and optimization
   webpack: (config, { isServer }) => {
     // Handle handlebars and Node.js modules for client builds
     if (!isServer) {
@@ -70,7 +71,38 @@ const nextConfig: NextConfig = {
         'handlebars'
       );
     }
-    
+
+    // Enable persistent caching for faster rebuilds
+    config.cache = {
+      type: 'filesystem',
+      buildDependencies: {
+        config: [__filename],
+      },
+    };
+
+    // Enable code splitting optimizations
+    config.optimization = {
+      ...config.optimization,
+      splitChunks: {
+        chunks: 'all',
+        maxInitialRequests: 10,
+        maxAsyncRequests: 10,
+        cacheGroups: {
+          defaultVendors: {
+            test: /[\\/]node_modules[\\/]/,
+            priority: -10,
+            reuseExistingChunk: true,
+          },
+          default: {
+            minChunks: 2,
+            priority: -20,
+            reuseExistingChunk: true,
+          },
+        },
+      },
+      runtimeChunk: 'single',
+    };
+
     return config;
   },
 };

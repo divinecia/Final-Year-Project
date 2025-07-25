@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
  
 export function middleware(request: NextRequest) {
+  const start = Date.now();
+
   // Assume a user is not logged in if they don't have a session token cookie
   // Note: This is a simple check. A real app would verify the token's validity.
   const sessionToken = request.cookies.get('firebase-session-token');
@@ -49,12 +51,15 @@ export function middleware(request: NextRequest) {
   // If there's no session token and the user is trying to access a protected route
   if (!sessionToken) {
     if (protectedWorkerPaths.some(p => pathname.startsWith(p))) {
+        console.log(`[Middleware] Redirecting to /worker/login for ${pathname} - took ${Date.now() - start}ms`);
         return NextResponse.redirect(new URL('/worker/login', request.url))
     }
     if (protectedHouseholdPaths.some(p => pathname.startsWith(p))) {
+        console.log(`[Middleware] Redirecting to /household/login for ${pathname} - took ${Date.now() - start}ms`);
         return NextResponse.redirect(new URL('/household/login', request.url))
     }
      if (protectedAdminPaths.some(p => pathname.startsWith(p))) {
+        console.log(`[Middleware] Redirecting to /admin/login for ${pathname} - took ${Date.now() - start}ms`);
         return NextResponse.redirect(new URL('/admin/login', request.url))
     }
   }
@@ -63,16 +68,20 @@ export function middleware(request: NextRequest) {
   // we can redirect them to their respective dashboards.
   if (sessionToken) {
     if(pathname.startsWith('/worker/login') || pathname.startsWith('/worker/register')) {
+      console.log(`[Middleware] Redirecting to /worker/dashboard for ${pathname} - took ${Date.now() - start}ms`);
       return NextResponse.redirect(new URL('/worker/dashboard', request.url))
     }
     if(pathname.startsWith('/household/login') || pathname.startsWith('/household/register')) {
+      console.log(`[Middleware] Redirecting to /household/dashboard for ${pathname} - took ${Date.now() - start}ms`);
       return NextResponse.redirect(new URL('/household/dashboard', request.url))
     }
     if(pathname.startsWith('/admin/login')) {
+      console.log(`[Middleware] Redirecting to /admin/dashboard for ${pathname} - took ${Date.now() - start}ms`);
       return NextResponse.redirect(new URL('/admin/dashboard', request.url))
     }
   }
- 
+
+  console.log(`[Middleware] Passing through ${pathname} - took ${Date.now() - start}ms`);
   return NextResponse.next()
 }
  
