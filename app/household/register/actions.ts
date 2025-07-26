@@ -1,27 +1,23 @@
 
 'use server';
 
-import { db } from '@/lib/firebase';
-import { doc, setDoc, Timestamp } from 'firebase/firestore';
-import { signUpWithEmailAndPassword } from '@/lib/auth';
+import { createUserProfile, getUserProfile } from '@/lib/database';
 import type { HouseholdFormData } from './schemas';
 
 export type FullFormData = HouseholdFormData;
 
-export async function registerHousehold(formData: FullFormData) {
-  if (!formData.email) {
-      return { success: false, error: "Email is required for registration." };
-  }
-
-  // 1. Create the user in Firebase Authentication
-  const authResult = await signUpWithEmailAndPassword(formData.email, formData.password);
-  if (!authResult.success || !authResult.uid) {
-    return { success: false, error: authResult.error || "Failed to create user account." };
-  }
-  
-  const userId = authResult.uid;
-
+export async function saveHouseholdProfile(formData: FullFormData, userId: string) {
   try {
+    // Check if profile already exists
+    const existingProfile = await getUserProfile('household', userId);
+    if (existingProfile.success) {
+      console.log('⚠️ Household profile already exists');
+      return { 
+        success: false, 
+        error: 'Profile already exists for this user' 
+      };
+    }
+
     const householdData = {
         uid: userId,
         fullName: formData.fullName,
@@ -47,19 +43,25 @@ export async function registerHousehold(formData: FullFormData) {
             primary: formData.primaryServices,
             frequency: formData.serviceFrequency,
         },
-        dateJoined: Timestamp.now(),
         status: 'active' as const,
+        userType: 'household' as const,
+        isActive: true,
+        emailVerified: false,
+        profileCompleted: true,
+        totalBookings: 0,
+        totalSpent: 0,
     };
 
-    // 2. Create the user document in Firestore with the user's UID as the document ID
-    const householdDocRef = doc(db, 'household', userId);
-    await setDoc(householdDocRef, householdData);
-
-    console.log("Document written for household user ID: ", userId);
-    return { success: true, id: userId };
-  } catch (error) {
-    console.error("Error adding household document: ", error);
-    // Propagate the error to be caught by the calling function
-    throw new Error("Failed to save household profile to database.");
+    const result = await createUserProfile('household', userId, householdData);
+    
+    if (result.success) {
+      console.log("✅ Household profile saved successfully for user ID: ", userId);
+      return { success: true, id: userId };
+    } else {
+      return { success: false, error: result.error || "Failed to save household profile to database." };
+    }
+  } catch (error: any) {
+    console.error("❌ Error saving household profile: ", error);
+    return { success: false, error: `Failed to save household profile: ${error.message}` };
   }
 }

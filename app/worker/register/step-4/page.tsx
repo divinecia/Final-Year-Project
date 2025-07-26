@@ -22,8 +22,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 import { Camera, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { registerWorker, FormData } from "../actions";
+import { saveWorkerProfile, FormData } from "../actions";
 import { useFormContext } from "../form-provider";
+import { signUpWithEmailAndPassword } from "@/lib/client-auth";
+import { OAuthButtons } from "@/components/oauth-buttons";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -75,6 +77,51 @@ export default function WorkerRegisterStep4Page() {
   const idFrontRef = form.register("idFront");
   const idBackRef = form.register("idBack");
   const selfieRef = form.register("selfie");
+
+  // Handle OAuth sign-in success
+  async function handleOAuthSuccess(userId: string, email: string) {
+    const finalData = { ...formData, email } as FormData;
+    
+    if (!finalData.fullName) {
+      toast({
+        variant: "destructive",
+        title: "Missing Information",
+        description: "Please go back to previous steps and complete all required fields.",
+      });
+      return;
+    }
+
+    toast({
+        title: "Saving Profile...",
+        description: "Please wait while we set up your worker profile.",
+    });
+
+    try {
+      // Save user profile to Firestore (server-side)
+      const result = await saveWorkerProfile(finalData, userId);
+      
+      if (result.success) {
+        toast({
+          title: "Registration Successful!",
+          description: "Your worker account has been created with OAuth.",
+        });
+        router.push("/worker/register/success");
+      } else {
+        toast({
+            title: "Profile Save Failed",
+            description: result.error || "Account created but failed to save profile.",
+            variant: "destructive",
+        });
+      }
+    } catch (error) {
+       console.error('OAuth registration error:', error);
+       toast({
+            title: "Registration Failed",
+            description: "An unexpected error occurred. Please try again.",
+            variant: "destructive",
+        });
+    }
+  }
   
   async function onSubmit(values: z.infer<typeof Step4Schema>) {
     const finalData = { ...formData, ...values } as FormData;
@@ -94,13 +141,31 @@ export default function WorkerRegisterStep4Page() {
     });
 
     try {
-        const result = await registerWorker(finalData);
+        // Step 1: Create Firebase Auth user (client-side)
+        const authResult = await signUpWithEmailAndPassword(finalData.email, finalData.password);
+        
+        if (!authResult.success || !authResult.uid) {
+          toast({
+            title: "Registration Failed",
+            description: authResult.error || "Failed to create user account.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Step 2: Save worker profile to Firestore (server-side)
+        const result = await saveWorkerProfile(finalData, authResult.uid);
+        
         if (result.success) {
+            toast({
+              title: "Registration Successful!",
+              description: "Your worker application has been submitted.",
+            });
             router.push("/worker/register/success");
         } else {
              toast({
-                title: "Registration Failed",
-                description: result.error || "Could not submit your application. Please try again.",
+                title: "Profile Save Failed",
+                description: result.error || "Account created but failed to save profile.",
                 variant: "destructive",
             })
         }
@@ -157,6 +222,12 @@ export default function WorkerRegisterStep4Page() {
           <CardDescription>Step 4: Almost there!</CardDescription>
         </CardHeader>
         <CardContent>
+          <OAuthButtons 
+            onSuccess={handleOAuthSuccess}
+            disabled={form.formState.isSubmitting}
+            userType="worker"
+          />
+          
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
 

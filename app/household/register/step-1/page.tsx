@@ -111,44 +111,62 @@ export default function HouseholdRegisterStep1Page() {
                     <FormMessage />
                   </FormItem>
                 )}
-              />
+                />
 
-              <Separator />
-              <h3 className="font-semibold text-md">Address Information</h3>
-              
-              <FormField
+                <Separator />
+                <h3 className="font-semibold text-md">Address Information</h3>
+                
+                <FormField
                 control={form.control}
                 name="district"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>District</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl><SelectTrigger><SelectValue placeholder="Select your district" /></SelectTrigger></FormControl>
-                      <SelectContent>
-                        <SelectItem value="gasabo">Gasabo</SelectItem>
-                        <SelectItem value="kicukiro">Kicukiro</SelectItem>
-                        <SelectItem value="nyarugenge">Nyarugenge</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
+                  <FormLabel>District</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Select your district" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                    <SelectItem value="gasabo">Gasabo</SelectItem>
+                    <SelectItem value="kicukiro">Kicukiro</SelectItem>
+                    <SelectItem value="nyarugenge">Nyarugenge</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
                   </FormItem>
                 )}
-              />
-              <FormField
+                />
+                <FormField
                 control={form.control}
                 name="sector"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Sector</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl><SelectTrigger><SelectValue placeholder="Select your sector" /></SelectTrigger></FormControl>
-                      <SelectContent>
-                        <SelectItem value="kimihurura">Kimihurura</SelectItem>
-                        <SelectItem value="kacyiru">Kacyiru</SelectItem>
-                        <SelectItem value="remera">Remera</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
+                  <FormLabel>Sector (matched to district)</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Select your sector" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                    {form.watch("district") === "gasabo" && (
+                      <>
+                      <SelectItem value="kimihurura">Kimihurura</SelectItem>
+                      <SelectItem value="kacyiru">Kacyiru</SelectItem>
+                      <SelectItem value="remera">Remera</SelectItem>
+                      </>
+                    )}
+                    {form.watch("district") === "kicukiro" && (
+                      <>
+                      <SelectItem value="kagarama">Kagarama</SelectItem>
+                      <SelectItem value="kanombe">Kanombe</SelectItem>
+                      <SelectItem value="gatenga">Gatenga</SelectItem>
+                      </>
+                    )}
+                    {form.watch("district") === "nyarugenge" && (
+                      <>
+                      <SelectItem value="nyamirambo">Nyamirambo</SelectItem>
+                      <SelectItem value="nyakabanda">Nyakabanda</SelectItem>
+                      <SelectItem value="gitega">Gitega</SelectItem>
+                      </>
+                    )}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
                   </FormItem>
                 )}
               />

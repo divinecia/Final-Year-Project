@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { signUpWithEmailAndPassword, signInWithEmailAndPassword } from '@/lib/client-auth';
 import { auth } from '@/lib/firebase';
 
 export default function FirebaseTestPage() {
@@ -15,37 +15,21 @@ export default function FirebaseTestPage() {
     setResult('');
     
     try {
-      console.log('🔥 Testing Firebase signup...');
+      console.log('🔥 Testing Firebase signup with client-auth...');
       console.log('Auth instance:', auth);
       console.log('Email:', email);
       
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      console.log('✅ Signup successful:', userCredential);
+      const authResult = await signUpWithEmailAndPassword(email, password);
+      console.log('✅ Signup result:', authResult);
       
-      setResult(`✅ SUCCESS: User created with UID: ${userCredential.user.uid}`);
+      if (authResult.success) {
+        setResult(`✅ SUCCESS: User created with UID: ${authResult.uid}`);
+      } else {
+        setResult(`❌ ERROR: ${authResult.error}`);
+      }
     } catch (error: any) {
       console.error('❌ Signup failed:', error);
-      
-      let errorMessage = `❌ ERROR: ${error.code}`;
-      
-      switch (error.code) {
-        case 'auth/requests-to-this-api-identitytoolkit-method-google.cloud.identitytoolkit.v1.authenticationservice.signup-are-blocked.':
-          errorMessage += '\n\n🔧 FIX: Go to Firebase Console → Authentication → Sign-in method → Enable Email/Password';
-          break;
-        case 'auth/email-already-in-use':
-          errorMessage += '\n\n💡 TIP: This email is already registered. Try signing in instead.';
-          break;
-        case 'auth/invalid-email':
-          errorMessage += '\n\n💡 TIP: Please enter a valid email address.';
-          break;
-        case 'auth/weak-password':
-          errorMessage += '\n\n💡 TIP: Password should be at least 6 characters.';
-          break;
-        default:
-          errorMessage += `\n\nFull error: ${error.message}`;
-      }
-      
-      setResult(errorMessage);
+      setResult(`❌ UNEXPECTED ERROR: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -56,15 +40,19 @@ export default function FirebaseTestPage() {
     setResult('');
     
     try {
-      console.log('🔥 Testing Firebase signin...');
+      console.log('🔥 Testing Firebase signin with client-auth...');
       
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      console.log('✅ Signin successful:', userCredential);
+      const authResult = await signInWithEmailAndPassword(email, password);
+      console.log('✅ Signin result:', authResult);
       
-      setResult(`✅ SUCCESS: Signed in with UID: ${userCredential.user.uid}`);
+      if (authResult.success) {
+        setResult(`✅ SUCCESS: Signed in with UID: ${authResult.uid}`);
+      } else {
+        setResult(`❌ ERROR: ${authResult.error}`);
+      }
     } catch (error: any) {
       console.error('❌ Signin failed:', error);
-      setResult(`❌ SIGNIN ERROR: ${error.code}\n${error.message}`);
+      setResult(`❌ UNEXPECTED ERROR: ${error.message}`);
     } finally {
       setLoading(false);
     }

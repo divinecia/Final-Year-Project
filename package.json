@@ -20,6 +20,7 @@
     "typecheck:watch": "tsc --noEmit --watch",
     "db:seed": "tsx src/scripts/seed.ts",
     "db:seed-services": "tsx src/scripts/seed-services-locations.ts",
+    "db:seed-admin": "tsx src/scripts/seed-admin.ts",
     "clean": "rm -rf .next && rm -f tsconfig.tsbuildinfo",
     "clean:all": "npm run clean && rm -rf node_modules && npm install"
   },

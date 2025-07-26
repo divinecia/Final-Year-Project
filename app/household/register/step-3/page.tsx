@@ -21,7 +21,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useFormContext } from "../form-provider";
-import { registerHousehold, type FullFormData } from "../actions";
+import { saveHouseholdProfile, type FullFormData } from "../actions";
+import { signUpWithEmailAndPassword } from "@/lib/client-auth";
+import { OAuthButtons } from "@/components/oauth-buttons";
 
 const Step3Schema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters."),
@@ -46,6 +48,51 @@ export default function HouseholdRegisterStep3Page() {
     },
   });
 
+  // Handle OAuth sign-in success
+  async function handleOAuthSuccess(userId: string, email: string) {
+    const finalData = { ...formData, email } as FullFormData;
+    
+    if (!finalData.fullName) {
+      toast({
+        variant: "destructive",
+        title: "Missing Information",
+        description: "Please go back to step 1 and complete all required fields.",
+      });
+      return;
+    }
+
+    toast({
+        title: "Saving Profile...",
+        description: "Please wait while we set up your household profile.",
+    });
+
+    try {
+      // Save user profile to Firestore (server-side)
+      const result = await saveHouseholdProfile(finalData, userId);
+      
+      if (result.success) {
+        toast({
+          title: "Registration Successful!",
+          description: "Your household account has been created with OAuth.",
+        });
+        router.push("/household/register/success");
+      } else {
+        toast({
+            title: "Profile Save Failed",
+            description: result.error || "Account created but failed to save profile.",
+            variant: "destructive",
+        });
+      }
+    } catch (error) {
+       console.error('OAuth registration error:', error);
+       toast({
+            title: "Registration Failed",
+            description: "An unexpected error occurred. Please try again.",
+            variant: "destructive",
+        });
+    }
+  }
+
   async function onSubmit(values: z.infer<typeof Step3Schema>) {
     const finalData = { ...formData, ...values } as FullFormData;
     
@@ -64,17 +111,36 @@ export default function HouseholdRegisterStep3Page() {
     });
 
     try {
-      const result = await registerHousehold(finalData);
+      // Step 1: Create Firebase Auth user (client-side)
+      const authResult = await signUpWithEmailAndPassword(finalData.email, finalData.password);
+      
+      if (!authResult.success || !authResult.uid) {
+        toast({
+          title: "Registration Failed",
+          description: authResult.error || "Failed to create user account.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Step 2: Save user profile to Firestore (server-side)
+      const result = await saveHouseholdProfile(finalData, authResult.uid);
+      
       if (result.success) {
+        toast({
+          title: "Registration Successful!",
+          description: "Your household account has been created.",
+        });
         router.push("/household/register/success");
       } else {
         toast({
-            title: "Registration Failed",
-            description: result.error || "Could not create your account. Please try again.",
+            title: "Profile Save Failed",
+            description: result.error || "Account created but failed to save profile.",
             variant: "destructive",
         });
       }
     } catch (error) {
+       console.error('Registration error:', error);
        toast({
             title: "Registration Failed",
             description: "An unexpected error occurred. Please try again.",
@@ -92,6 +158,12 @@ export default function HouseholdRegisterStep3Page() {
           <CardDescription>Step 3: Final step</CardDescription>
         </CardHeader>
         <CardContent>
+          <OAuthButtons 
+            onSuccess={handleOAuthSuccess}
+            disabled={form.formState.isSubmitting}
+            userType="household"
+          />
+          
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               

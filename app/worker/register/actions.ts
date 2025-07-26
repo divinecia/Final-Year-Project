@@ -1,27 +1,25 @@
 
 'use server';
 
-import { db } from '@/lib/firebase';
-import { doc, setDoc, Timestamp } from 'firebase/firestore';
-import { signUpWithEmailAndPassword } from '@/lib/auth';
+import { createUserProfile, getUserProfile } from '@/lib/database';
 import { uploadFile } from '@/lib/storage';
+import { Timestamp } from 'firebase/firestore';
 import type { WorkerFormData } from './schemas';
 
 export type FormData = WorkerFormData;
 
-export async function registerWorker(formData: FormData) {
-  if (!formData.email) {
-    return { success: false, error: "Email is required for registration." };
-  }
-
-  const authResult = await signUpWithEmailAndPassword(formData.email, formData.password);
-  if (!authResult.success || !authResult.uid) {
-    return { success: false, error: authResult.error || "Failed to create user account." };
-  }
-  
-  const userId = authResult.uid;
-
+export async function saveWorkerProfile(formData: FormData, userId: string) {
   try {
+    // Check if profile already exists
+    const existingProfile = await getUserProfile('worker', userId);
+    if (existingProfile.success) {
+      console.log('⚠️ Worker profile already exists');
+      return { 
+        success: false, 
+        error: 'Profile already exists for this user' 
+      };
+    }
+
     // Handle file uploads
     const profilePictureUrl = formData.profilePicture
       ? await uploadFile(formData.profilePicture, `workers/${userId}/profile/`)
@@ -48,9 +46,11 @@ export async function registerWorker(formData: FormData) {
         nationalId: formData.nationalId,
         
         // Address
-        district: formData.district,
-        sector: formData.sector,
-        address: formData.address,
+        address: {
+            district: formData.district,
+            sector: formData.sector,
+            line1: formData.address,
+        },
         
         // Emergency Contact
         emergencyContact: {
@@ -89,18 +89,24 @@ export async function registerWorker(formData: FormData) {
         jobsCompleted: 0,
         
         // System Fields
-        dateJoined: Timestamp.now(),
         status: 'pending' as const,
         verificationStatus: 'pending' as const,
+        userType: 'worker' as const,
+        isActive: true,
+        emailVerified: false,
+        profileCompleted: true,
     };
 
-    const workerDocRef = doc(db, 'worker', userId);
-    await setDoc(workerDocRef, workerData);
-
-    console.log("Document written for user ID: ", userId);
-    return { success: true, id: userId };
-  } catch (error) {
-    console.error("Error adding document: ", error);
-    throw new Error("Failed to save worker profile to database.");
+    const result = await createUserProfile('worker', userId, workerData);
+    
+    if (result.success) {
+      console.log("✅ Worker profile saved successfully for user ID: ", userId);
+      return { success: true, id: userId };
+    } else {
+      return { success: false, error: result.error || "Failed to save worker profile to database." };
+    }
+  } catch (error: any) {
+    console.error("❌ Error saving worker profile: ", error);
+    return { success: false, error: `Failed to save worker profile: ${error.message}` };
   }
 }
