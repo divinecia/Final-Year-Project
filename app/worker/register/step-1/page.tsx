@@ -290,21 +290,42 @@ export default function WorkerRegisterStep1Page() {
                 name="sector"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Sector</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormLabel>Sector</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        disabled={!form.watch("district")}
+                      >
                         <FormControl>
-                        <SelectTrigger>
+                          <SelectTrigger>
                             <SelectValue placeholder="Select your sector" />
-                        </SelectTrigger>
+                          </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                           {/* TODO: Populate based on district */}
-                            <SelectItem value="kimihurura">Kimihurura</SelectItem>
-                            <SelectItem value="kacyiru">Kacyiru</SelectItem>
-                            <SelectItem value="remera">Remera</SelectItem>
+                          {form.watch("district") === "gasabo" && (
+                            <>
+                              <SelectItem value="kimihurura">Kimihurura</SelectItem>
+                              <SelectItem value="kacyiru">Kacyiru</SelectItem>
+                              <SelectItem value="remera">Remera</SelectItem>
+                            </>
+                          )}
+                          {form.watch("district") === "kicukiro" && (
+                            <>
+                              <SelectItem value="kagarama">Kagarama</SelectItem>
+                              <SelectItem value="kanombe">Kanombe</SelectItem>
+                              <SelectItem value="gatenga">Gatenga</SelectItem>
+                            </>
+                          )}
+                          {form.watch("district") === "nyarugenge" && (
+                            <>
+                              <SelectItem value="kimisagara">Kimisagara</SelectItem>
+                              <SelectItem value="nyamirambo">Nyamirambo</SelectItem>
+                              <SelectItem value="nyakabanda">Nyakabanda</SelectItem>
+                            </>
+                          )}
                         </SelectContent>
-                    </Select>
-                    <FormMessage />
+                      </Select>
+                      <FormMessage />
                     </FormItem>
                 )}
                 />
