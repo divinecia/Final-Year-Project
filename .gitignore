@@ -15,6 +15,7 @@ build/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.vercel
 
 # IDE
 .vscode/
@@ -63,3 +64,7 @@ next-env.d.ts
 # Local development
 .cache/
 .parcel-cache
+
+# Prevent accidental secrets
+setup-vercel-env.sh
+vercel-env-setup.md

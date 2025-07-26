@@ -6,6 +6,9 @@ const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
   
+  // Output configuration for deployment
+  output: process.env.NODE_ENV === 'production' ? 'standalone' : undefined,
+  
   // Build settings
   typescript: {
     ignoreBuildErrors: false,
