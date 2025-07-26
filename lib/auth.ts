@@ -6,6 +6,7 @@ import {
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   GithubAuthProvider,
+  GoogleAuthProvider,
   signInWithPopup,
   type Auth,
 } from 'firebase/auth';
@@ -61,7 +62,7 @@ export async function signUpWithEmailAndPassword(
 }
 
 // Sign in with email and password, checking for user profile existence
-export async function signInWithEmailAndPasswordHandler(
+export async function signIn(
   email: string,
   password: string,
   userType: 'worker' | 'household' | 'admin'
@@ -109,6 +110,39 @@ export async function signInWithGitHub(userType: 'worker' | 'household' | 'admin
     });
 
     const profileExists = await userProfileExists(user.uid, userType);
+
+    if (!profileExists) {
+      await createUserProfile(user.uid, user.email!, userType);
+    }
+
+    return { success: true, isNewUser: !profileExists };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+// Sign in with Google, checking for user profile existence
+export async function signInWithGoogle(userType: 'worker' | 'household' | 'admin') {
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+    const idToken = await user.getIdToken();
+
+    const cookieStore = await cookies();
+    cookieStore.set(SESSION_COOKIE_NAME, idToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 24 * 7, // 1 week
+      path: '/',
+    });
+
+    const profileExists = await userProfileExists(user.uid, userType);
+
+    if (!profileExists) {
+      await createUserProfile(user.uid, user.email!, userType);
+    }
 
     return { success: true, isNewUser: !profileExists };
   } catch (error: any) {

@@ -22,7 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { GoogleIcon } from "@/components/icons/google-icon";
-import { signIn, signInWithGitHub } from "@/lib/auth";
+import { signIn, signInWithGitHub, signInWithGoogle } from "@/lib/auth";
 
 const GitHubIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" {...props}><path fill="currentColor" d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5c.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34c-.46-1.16-1.11-1.47-1.11-1.47c-.91-.62.07-.6.07-.6c1 .07 1.53 1.03 1.53 1.03c.87 1.5 2.3.93 2.87.71c.09-.55.34-1.04.62-1.28c-2.19-.25-4.5-1.1-4.5-4.88c0-1.08.39-1.96 1.03-2.65c-.1-.25-.45-1.25.1-2.62c0 0 .83-.26 2.72 1.02A9.6 9.6 0 0 1 12 6.82a9.6 9.6 0 0 1 2.47.34c1.89-1.28 2.72-1.02 2.72-1.02c.55 1.37.2 2.37.1 2.62c.64.69 1.03 1.57 1.03 2.65c0 3.79-2.31 4.63-4.5 4.88c.36.31.69.92.69 1.85V21c0 .27.16.58.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2"/></svg>
@@ -83,6 +83,23 @@ export default function HouseholdLoginPage() {
     }
   }
 
+  async function handleGoogleSignIn() {
+    const result = await signInWithGoogle('household');
+    if (result.success) {
+        if (result.isNewUser) {
+            router.push('/household/register');
+        } else {
+            router.push('/household/dashboard');
+        }
+    } else {
+        toast({
+            variant: "destructive",
+            title: "Google Sign-In Failed",
+            description: result.error || "Could not sign in with Google."
+        });
+    }
+  }
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-6 bg-gray-50">
         <div className="w-full max-w-md space-y-4">
@@ -138,7 +155,7 @@ export default function HouseholdLoginPage() {
                     </Form>
                     <Separator className="my-6" />
                     <div className="space-y-4">
-                        <Button variant="outline" className="w-full">
+                        <Button variant="outline" className="w-full" onClick={handleGoogleSignIn}>
                             <GoogleIcon className="mr-2 h-5 w-5" />
                             Continue with Google
                         </Button>
