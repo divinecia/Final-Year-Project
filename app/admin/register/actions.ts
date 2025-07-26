@@ -25,7 +25,7 @@ export async function registerAdmin(formData: AdminRegistrationData) {
 
   // 1. Create the user in Firebase Authentication
   // In a real scenario, you might want to invite admins instead of creating passwords directly.
-  const authResult = await signUpWithEmailAndPassword(formData.email, formData.password);
+  const authResult = await signUpWithEmailAndPassword(formData.email, formData.password, 'admin');
   if (!authResult.success || !authResult.uid) {
     // A common error is that the email already exists
     if (authResult.error?.includes('email-already-in-use')) {
