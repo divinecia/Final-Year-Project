@@ -69,3 +69,4 @@ next-env.d.ts
 # Prevent accidental secrets
 setup-vercel-env.sh
 vercel-env-setup.md
+.vercel
