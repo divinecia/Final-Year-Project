@@ -1,29 +1,37 @@
-# Dependencies
+# Node.js dependencies
 node_modules/
-.pnp
+.pnp/
 .pnp.js
 
-# Production build
-.next/
-out/
+# Build output
 dist/
 build/
+out/
+.next/
+coverage/
+*.lcov
 
 # Environment variables
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
+
+# Vercel
+.vercel/
 .env.vercel
 
-# IDE
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+
+# IDEs and editors
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# OS
+# OS generated files
 .DS_Store
 .DS_Store?
 ._*
@@ -45,25 +53,18 @@ pids
 *.seed
 *.pid.lock
 
-# Coverage directory used by tools like istanbul
-coverage/
-*.lcov
-
-# Firebase
-.firebase/
-firebase-debug.log
-firestore-debug.log
-
-# Vercel
-.vercel
-
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
 
-# Local development
+# Parcel
 .cache/
-.parcel-cache
+.parcel-cache/
+
+# Miscellaneous
+*.local
+*.bak
+*.tmp
 
 # Prevent accidental secrets
 setup-vercel-env.sh

@@ -1,18 +1,10 @@
-
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-// Simplified middleware for basic path protection (Edge Runtime compatible)
-export async function middleware(request: NextRequest) {
-  const start = Date.now();
-  const { pathname } = request.nextUrl;
-
-  // Check for session token (basic check only - full verification happens in components)
-  const sessionCookie = request.cookies.get('firebase-session-token');
-  const hasSession = sessionCookie && sessionCookie.value;
-
-  // Define protected paths
-  const protectedWorkerPaths = [
+// Define protected path groups and their login redirects
+const protectedPaths = [
+  {
+    paths: [
       '/worker/dashboard',
       '/worker/earnings',
       '/worker/jobs',
@@ -22,9 +14,11 @@ export async function middleware(request: NextRequest) {
       '/worker/schedule',
       '/worker/settings',
       '/worker/training',
-  ];
-
-  const protectedHouseholdPaths = [
+    ],
+    login: '/worker/login',
+  },
+  {
+    paths: [
       '/household/dashboard',
       '/household/bookings',
       '/household/find-worker',
@@ -34,9 +28,11 @@ export async function middleware(request: NextRequest) {
       '/household/post-job',
       '/household/reviews',
       '/household/settings',
-  ];
-
-  const protectedAdminPaths = [
+    ],
+    login: '/household/login',
+  },
+  {
+    paths: [
       '/admin/dashboard',
       '/admin/households',
       '/admin/jobs',
@@ -47,25 +43,27 @@ export async function middleware(request: NextRequest) {
       '/admin/training',
       '/admin/workers/workermanage',
       '/admin/register',
-  ];
+    ],
+    login: '/admin/login',
+  },
+];
 
-  // Redirect to appropriate login if no session and accessing protected paths
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const sessionCookie = request.cookies.get('firebase-session-token');
+  const hasSession = !!(sessionCookie && sessionCookie.value);
+
   if (!hasSession) {
-    if (protectedWorkerPaths.some(p => pathname.startsWith(p))) {
-        return NextResponse.redirect(new URL('/worker/login', request.url))
-    }
-    if (protectedHouseholdPaths.some(p => pathname.startsWith(p))) {
-        return NextResponse.redirect(new URL('/household/login', request.url))
-    }
-    if (protectedAdminPaths.some(p => pathname.startsWith(p))) {
-        return NextResponse.redirect(new URL('/admin/login', request.url))
+    for (const group of protectedPaths) {
+      if (group.paths.some(p => pathname.startsWith(p))) {
+        return NextResponse.redirect(new URL(group.login, request.url));
+      }
     }
   }
 
-  return NextResponse.next()
+  return NextResponse.next();
 }
 
-// See "Matching Paths" below to learn more
 export const config = {
   matcher: ['/worker/:path*', '/household/:path*', '/admin/:path*'],
-}
+};

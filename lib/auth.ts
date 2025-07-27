@@ -1,3 +1,16 @@
+// Sends a password reset email using Firebase Auth
+export async function sendPasswordResetEmail(email: string, userType: UserType): Promise<void> {
+  const auth = await getFirebaseAuth();
+  try {
+    // Optionally, you can check if the user exists in Firestore for the given userType before sending
+    // const userExists = await userProfileExistsByEmail(email, userType);
+    // if (!userExists) throw new Error('No user found with this email.');
+    await import('firebase/auth').then(({ sendPasswordResetEmail }) => sendPasswordResetEmail(auth, email));
+  } catch (error: any) {
+    console.error(`Password reset error for ${userType}:`, error);
+    throw new Error(error.message || 'Failed to send password reset email.');
+  }
+}
 'use server';
 
 import {
@@ -6,66 +19,88 @@ import {
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   GithubAuthProvider,
+  GoogleAuthProvider,
   signInWithPopup,
   type Auth,
 } from 'firebase/auth';
+export async function signInWithGoogle(
+  userType: UserType
+): Promise<{ success: boolean; isNewUser?: boolean; error?: string }> {
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+    const idToken = await user.getIdToken();
+
+    (await cookies()).set(SESSION_COOKIE_NAME, idToken, COOKIE_OPTIONS);
+
+    const profileExists = await userProfileExists(user.uid, userType);
+
+    return { success: true, isNewUser: !profileExists };
+  } catch (error: any) {
+    console.error('Google sign in error:', error);
+    return { success: false, error: error.message };
+  }
+}
 import { app, db } from './firebase';
 import { cookies } from 'next/headers';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 const SESSION_COOKIE_NAME = 'firebase-session-token';
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  maxAge: 60 * 60 * 24 * 7, // 1 week
+  path: '/',
+};
 
 export async function getFirebaseAuth(): Promise<Auth> {
   return getAuth(app);
 }
 
-// Check if a user profile exists in Firestore for the given role
-async function userProfileExists(uid: string, userType: 'worker' | 'household' | 'admin'): Promise<boolean> {
+type UserType = 'worker' | 'household' | 'admin';
+
+async function userProfileExists(uid: string, userType: UserType): Promise<boolean> {
   const collectionName = userType === 'admin' ? 'admins' : userType;
   const userDoc = await getDoc(doc(db, collectionName, uid));
   return userDoc.exists();
 }
 
-// Create a user profile in Firestore for the given role
-async function createUserProfile(uid: string, email: string, userType: 'worker' | 'household' | 'admin') {
+async function createUserProfile(uid: string, email: string, userType: UserType): Promise<void> {
   const collectionName = userType === 'admin' ? 'admins' : userType;
-  await setDoc(doc(db, collectionName, uid), { email, createdAt: new Date().toISOString() });
+  await setDoc(doc(db, collectionName, uid), {
+    email,
+    createdAt: Date.now(),
+  });
 }
 
-// Sign up with email and password, and create a user profile
 export async function signUpWithEmailAndPassword(
   email: string,
   password: string,
-  userType: 'worker' | 'household' | 'admin'
-) {
+  userType: UserType
+): Promise<{ success: boolean; uid?: string; error?: string }> {
   const auth = await getFirebaseAuth();
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const idToken = await userCredential.user.getIdToken();
 
-    // Create user profile in Firestore
     await createUserProfile(userCredential.user.uid, email, userType);
 
-    const cookieStore = await cookies();
-    cookieStore.set(SESSION_COOKIE_NAME, idToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 24 * 7, // 1 week
-      path: '/',
-    });
+    (await cookies()).set(SESSION_COOKIE_NAME, idToken, COOKIE_OPTIONS);
 
     return { success: true, uid: userCredential.user.uid };
   } catch (error: any) {
+    console.error('Sign up error:', error);
     return { success: false, error: error.message };
   }
 }
 
-// Sign in with email and password, checking for user profile existence
 export async function signInWithEmailAndPasswordHandler(
   email: string,
   password: string,
-  userType: 'worker' | 'household' | 'admin'
-) {
+  userType: UserType
+): Promise<{ success: boolean; isNewUser?: boolean; error?: string }> {
   const auth = await getFirebaseAuth();
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -77,22 +112,18 @@ export async function signInWithEmailAndPasswordHandler(
       return { success: false, error: "User profile not found for this role." };
     }
 
-    const cookieStore = await cookies();
-    cookieStore.set(SESSION_COOKIE_NAME, idToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 24 * 7, // 1 week
-      path: '/',
-    });
+    (await cookies()).set(SESSION_COOKIE_NAME, idToken, COOKIE_OPTIONS);
 
     return { success: true, isNewUser: !profileExists };
   } catch (error: any) {
+    console.error('Sign in error:', error);
     return { success: false, error: error.message };
   }
 }
 
-// Sign in with GitHub, checking for user profile existence
-export async function signInWithGitHub(userType: 'worker' | 'household' | 'admin') {
+export async function signInWithGitHub(
+  userType: UserType
+): Promise<{ success: boolean; isNewUser?: boolean; error?: string }> {
   const auth = getAuth(app);
   const provider = new GithubAuthProvider();
   try {
@@ -100,30 +131,38 @@ export async function signInWithGitHub(userType: 'worker' | 'household' | 'admin
     const user = result.user;
     const idToken = await user.getIdToken();
 
-    const cookieStore = await cookies();
-    cookieStore.set(SESSION_COOKIE_NAME, idToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 24 * 7, // 1 week
-      path: '/',
-    });
+    (await cookies()).set(SESSION_COOKIE_NAME, idToken, COOKIE_OPTIONS);
 
     const profileExists = await userProfileExists(user.uid, userType);
 
     return { success: true, isNewUser: !profileExists };
   } catch (error: any) {
+    console.error('GitHub sign in error:', error);
     return { success: false, error: error.message };
   }
 }
 
-// Sign out and clear session cookie
-export async function signOut() {
+// Dummy password reset code verification
+export async function verifyPasswordResetCode(
+  verificationId: string,
+  code: string
+): Promise<{ success: boolean; error?: string }> {
+  if (code === '123456') {
+    return { success: true };
+  } else {
+    return { success: false, error: 'Invalid verification code.' };
+  }
+}
+
+export async function signOut(): Promise<void> {
   const auth = await getFirebaseAuth();
   await firebaseSignOut(auth);
   try {
-    const cookieStore = await cookies();
-    cookieStore.delete(SESSION_COOKIE_NAME);
+    (await cookies()).delete(SESSION_COOKIE_NAME);
   } catch (error) {
     console.warn('Could not delete cookie:', error);
   }
 }
+
+// Alias for compatibility with login pages
+export const signIn = signInWithEmailAndPasswordHandler;

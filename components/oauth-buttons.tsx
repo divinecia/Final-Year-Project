@@ -1,7 +1,7 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { signInWithGoogle, signInWithGitHub } from '@/lib/client-auth';
-import { useToast } from '@/hooks/use-toast';
+import { Button } from '../components/ui/button';
+import { signInWithGoogle, signInWithGitHub } from '../lib/client-auth';
+import { useToast } from '../hooks/use-toast';
 
 interface OAuthButtonsProps {
   onSuccess: (userId: string, email: string) => void;

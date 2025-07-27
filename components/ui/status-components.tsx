@@ -1,12 +1,54 @@
 import React from 'react';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  getJobStatusOptions, 
-  getPaymentStatusOptions, 
-  getPayFrequencyOptions, 
-  getUserRoleOptions 
-} from '@/lib/system-config';
+import { Badge } from './badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
+import {
+  getJobStatusOptions,
+  getPaymentStatusOptions,
+  getPayFrequencyOptions,
+  getUserRoleOptions,
+} from '../../lib/system-config';
+
+// Utility: fallback options for each type
+const fallbackOptions = {
+  job: [
+    { id: 'open', label: 'Open', color: 'green' },
+    { id: 'assigned', label: 'Assigned', color: 'blue' },
+    { id: 'in_progress', label: 'In Progress', color: 'yellow' },
+    { id: 'completed', label: 'Completed', color: 'green' },
+    { id: 'cancelled', label: 'Cancelled', color: 'red' },
+  ],
+  payment: [
+    { id: 'pending', label: 'Pending', color: 'yellow' },
+    { id: 'completed', label: 'Completed', color: 'green' },
+    { id: 'failed', label: 'Failed', color: 'red' },
+    { id: 'cancelled', label: 'Cancelled', color: 'red' },
+  ],
+  payFrequency: [
+    { id: 'per_hour', label: 'Per Hour' },
+    { id: 'per_day', label: 'Per Day' },
+    { id: 'per_week', label: 'Per Week' },
+    { id: 'per_month', label: 'Per Month' },
+  ],
+  userRole: [
+    { id: 'worker', label: 'Worker', color: 'green' },
+    { id: 'household', label: 'Household', color: 'blue' },
+    { id: 'admin', label: 'Administrator', color: 'purple' },
+  ],
+};
+
+// Utility: badge color mapping
+const badgeColorMap: Record<
+  string,
+  { variant: 'default' | 'secondary' | 'destructive'; className: string }
+> = {
+  green: { variant: 'default', className: 'bg-green-100 text-green-800 border-green-200' },
+  yellow: { variant: 'secondary', className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+  red: { variant: 'destructive', className: 'bg-red-100 text-red-800 border-red-200' },
+  blue: { variant: 'secondary', className: 'bg-blue-100 text-blue-800 border-blue-200' },
+  orange: { variant: 'default', className: 'bg-orange-100 text-orange-800 border-orange-200' },
+  purple: { variant: 'default', className: 'bg-purple-100 text-purple-800 border-purple-200' },
+  gray: { variant: 'secondary', className: 'bg-gray-100 text-gray-800 border-gray-200' },
+};
 
 // Status Badge Component
 interface StatusBadgeProps {
@@ -15,73 +57,66 @@ interface StatusBadgeProps {
   className?: string;
 }
 
-export function StatusBadge({ statusId, type, className = "" }: StatusBadgeProps) {
+export function StatusBadge({ statusId, type, className = '' }: StatusBadgeProps) {
   const [statusData, setStatusData] = React.useState<{ label: string; color: string } | null>(null);
 
   React.useEffect(() => {
+    let isMounted = true;
     async function loadStatus() {
       try {
         let options: Array<{ id: string; label: string; color: string }> = [];
-        
         switch (type) {
           case 'job':
-            options = await getJobStatusOptions();
-            break;
-          case 'payment':
-            options = await getPaymentStatusOptions();
-            break;
-          case 'user':
-            // For user roles, we might not have colors, so we'll provide defaults
-            const userRoles = await getUserRoleOptions();
-            options = userRoles.map(role => ({
-              id: role.id,
-              label: role.label,
-              color: role.id === 'admin' ? 'purple' : role.id === 'worker' ? 'green' : 'blue'
+            options = (await getJobStatusOptions()).map(opt => ({
+              ...opt,
+              color: opt.color ?? 'gray',
             }));
             break;
+          case 'payment':
+            options = (await getPaymentStatusOptions()).map(opt => ({
+              ...opt,
+              color: opt.color ?? 'gray',
+            }));
+            break;
+          case 'user': {
+            const userRoles = await getUserRoleOptions();
+            options = userRoles.map((role: { id: string; label: string }) => ({
+              id: role.id,
+              label: role.label,
+              color:
+                role.id === 'admin'
+                  ? 'purple'
+                  : role.id === 'worker'
+                  ? 'green'
+                  : 'blue',
+            }));
+            break;
+          }
         }
-        
-        const status = options.find(opt => opt.id === statusId);
-        if (status) {
-          setStatusData(status);
+        const status = options.find((opt) => opt.id === statusId);
+        if (isMounted) {
+          setStatusData(status ?? { label: statusId, color: 'gray' });
         }
-      } catch (error) {
-        console.error('Error loading status:', error);
-        // Fallback display
-        setStatusData({ label: statusId, color: 'gray' });
+      } catch {
+        if (isMounted) setStatusData({ label: statusId, color: 'gray' });
       }
     }
-
     loadStatus();
+    return () => {
+      isMounted = false;
+    };
   }, [statusId, type]);
 
   if (!statusData) {
-    return <Badge variant="secondary" className={className}>Loading...</Badge>;
+    return (
+      <Badge variant="secondary" className={className}>
+        Loading...
+      </Badge>
+    );
   }
 
-  // Map colors to badge variants and styles
-  const getVariantAndClass = (color: string) => {
-    switch (color) {
-      case 'green':
-        return { variant: 'default' as const, className: 'bg-green-100 text-green-800 border-green-200' };
-      case 'yellow':
-        return { variant: 'secondary' as const, className: 'bg-yellow-100 text-yellow-800 border-yellow-200' };
-      case 'red':
-        return { variant: 'destructive' as const, className: 'bg-red-100 text-red-800 border-red-200' };
-      case 'blue':
-        return { variant: 'secondary' as const, className: 'bg-blue-100 text-blue-800 border-blue-200' };
-      case 'orange':
-        return { variant: 'default' as const, className: 'bg-orange-100 text-orange-800 border-orange-200' };
-      case 'purple':
-        return { variant: 'default' as const, className: 'bg-purple-100 text-purple-800 border-purple-200' };
-      case 'gray':
-        return { variant: 'secondary' as const, className: 'bg-gray-100 text-gray-800 border-gray-200' };
-      default:
-        return { variant: 'secondary' as const, className: 'bg-gray-100 text-gray-800 border-gray-200' };
-    }
-  };
-
-  const { variant, className: colorClass } = getVariantAndClass(statusData.color);
+  const { variant, className: colorClass } =
+    badgeColorMap[statusData.color] ?? badgeColorMap.gray;
 
   return (
     <Badge variant={variant} className={`${colorClass} ${className}`}>
@@ -100,23 +135,25 @@ interface StatusSelectProps {
   className?: string;
 }
 
-export function StatusSelect({ 
-  value, 
-  onValueChange, 
-  type, 
-  placeholder = "Select status...",
+export function StatusSelect({
+  value,
+  onValueChange,
+  type,
+  placeholder = 'Select status...',
   disabled = false,
-  className = ""
+  className = '',
 }: StatusSelectProps) {
-  const [options, setOptions] = React.useState<Array<{ id: string; label: string; description?: string }>>([]);
+  const [options, setOptions] = React.useState<
+    Array<{ id: string; label: string; description?: string }>
+  >([]);
   const [isLoading, setIsLoading] = React.useState(true);
 
   React.useEffect(() => {
+    let isMounted = true;
     async function loadOptions() {
+      setIsLoading(true);
       try {
-        setIsLoading(true);
         let optionsData: Array<{ id: string; label: string; description?: string }> = [];
-        
         switch (type) {
           case 'job':
             optionsData = await getJobStatusOptions();
@@ -131,54 +168,18 @@ export function StatusSelect({
             optionsData = await getUserRoleOptions();
             break;
         }
-        
-        setOptions(optionsData);
-      } catch (error) {
-        console.error('Error loading options:', error);
-        // Provide fallback options based on type
-        setOptions(getFallbackOptions(type));
+        if (isMounted) setOptions(optionsData);
+      } catch {
+        if (isMounted) setOptions(fallbackOptions[type] ?? []);
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     }
-
     loadOptions();
+    return () => {
+      isMounted = false;
+    };
   }, [type]);
-
-  const getFallbackOptions = (type: string) => {
-    switch (type) {
-      case 'job':
-        return [
-          { id: 'open', label: 'Open' },
-          { id: 'assigned', label: 'Assigned' },
-          { id: 'in_progress', label: 'In Progress' },
-          { id: 'completed', label: 'Completed' },
-          { id: 'cancelled', label: 'Cancelled' }
-        ];
-      case 'payment':
-        return [
-          { id: 'pending', label: 'Pending' },
-          { id: 'completed', label: 'Completed' },
-          { id: 'failed', label: 'Failed' },
-          { id: 'cancelled', label: 'Cancelled' }
-        ];
-      case 'payFrequency':
-        return [
-          { id: 'per_hour', label: 'Per Hour' },
-          { id: 'per_day', label: 'Per Day' },
-          { id: 'per_week', label: 'Per Week' },
-          { id: 'per_month', label: 'Per Month' }
-        ];
-      case 'userRole':
-        return [
-          { id: 'worker', label: 'Worker' },
-          { id: 'household', label: 'Household' },
-          { id: 'admin', label: 'Administrator' }
-        ];
-      default:
-        return [];
-    }
-  };
 
   return (
     <Select value={value} onValueChange={onValueChange} disabled={disabled}>
@@ -187,14 +188,18 @@ export function StatusSelect({
       </SelectTrigger>
       <SelectContent>
         {isLoading ? (
-          <SelectItem value="loading" disabled>Loading options...</SelectItem>
+          <SelectItem value="loading" disabled>
+            Loading options...
+          </SelectItem>
         ) : (
-          options.map(option => (
+          options.map((option) => (
             <SelectItem key={option.id} value={option.id}>
               <div className="flex flex-col">
                 <span>{option.label}</span>
                 {option.description && (
-                  <span className="text-xs text-muted-foreground">{option.description}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {option.description}
+                  </span>
                 )}
               </div>
             </SelectItem>

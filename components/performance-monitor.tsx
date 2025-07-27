@@ -2,72 +2,83 @@
 
 import React, { useEffect } from 'react';
 
+// Utility: Format bytes to MB with 2 decimals
+const formatMB = (bytes: number) => `${(bytes / 1024 / 1024).toFixed(2)}MB`;
+
 export function PerformanceMonitor() {
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'performance' in window) {
-      // Monitor Core Web Vitals
-      const observer = new PerformanceObserver((list) => {
-        list.getEntries().forEach((entry) => {
-          if (entry.entryType === 'navigation') {
-            const navEntry = entry as PerformanceNavigationTiming;
+    if (typeof window === 'undefined' || !('performance' in window)) return;
+
+    // Core Web Vitals observer
+    const observer = new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        switch (entry.entryType) {
+          case 'navigation': {
+            const nav = entry as PerformanceNavigationTiming;
             console.log('Navigation Timing:', {
-              DNS: navEntry.domainLookupEnd - navEntry.domainLookupStart,
-              Connection: navEntry.connectEnd - navEntry.connectStart,
-              Request: navEntry.responseStart - navEntry.requestStart,
-              Response: navEntry.responseEnd - navEntry.responseStart,
-              DOM: navEntry.domContentLoadedEventEnd - navEntry.domContentLoadedEventStart,
-              Total: navEntry.loadEventEnd - navEntry.fetchStart,
+              DNS: nav.domainLookupEnd - nav.domainLookupStart,
+              Connection: nav.connectEnd - nav.connectStart,
+              Request: nav.responseStart - nav.requestStart,
+              Response: nav.responseEnd - nav.responseStart,
+              DOM: nav.domContentLoadedEventEnd - nav.domContentLoadedEventStart,
+              Total: nav.loadEventEnd - nav.fetchStart,
             });
+            break;
           }
-
-          if (entry.entryType === 'paint') {
+          case 'paint':
             console.log(`${entry.name}: ${entry.startTime.toFixed(2)}ms`);
-          }
-
-          if (entry.entryType === 'largest-contentful-paint') {
+            break;
+          case 'largest-contentful-paint':
             console.log(`LCP: ${entry.startTime.toFixed(2)}ms`);
-          }
-        });
-      });
-
-      observer.observe({ entryTypes: ['navigation', 'paint', 'largest-contentful-paint'] });
-
-      // Monitor memory usage
-      const checkMemory = () => {
-        if ('memory' in performance) {
-          const memory = (performance as any).memory;
-          console.log('Memory Usage:', {
-            used: `${(memory.usedJSHeapSize / 1024 / 1024).toFixed(2)}MB`,
-            total: `${(memory.totalJSHeapSize / 1024 / 1024).toFixed(2)}MB`,
-            limit: `${(memory.jsHeapSizeLimit / 1024 / 1024).toFixed(2)}MB`,
-          });
+            break;
         }
-      };
+      }
+    });
 
-      const memoryInterval = setInterval(checkMemory, 30000); // Check every 30 seconds
+    observer.observe({
+      entryTypes: ['navigation', 'paint', 'largest-contentful-paint'],
+    });
 
-      return () => {
-        observer.disconnect();
-        clearInterval(memoryInterval);
-      };
-    }
+    // Memory usage monitor (Chrome only)
+    const checkMemory = () => {
+      const perf = performance as any;
+      if (perf.memory) {
+        const { usedJSHeapSize, totalJSHeapSize, jsHeapSizeLimit } = perf.memory;
+        console.log('Memory Usage:', {
+          used: formatMB(usedJSHeapSize),
+          total: formatMB(totalJSHeapSize),
+          limit: formatMB(jsHeapSizeLimit),
+        });
+      }
+    };
+
+    const memoryInterval = setInterval(checkMemory, 30000);
+    checkMemory(); // Initial check
+
+    return () => {
+      observer.disconnect();
+      clearInterval(memoryInterval);
+    };
   }, []);
 
   return null;
 }
 
-// React performance profiler
-export function withPerformanceProfiler<P extends object>(
+// HOC: React performance profiler
+export function withPerformanceProfiler<P>(
   Component: React.ComponentType<P>,
   componentName: string
 ) {
-  return function ProfiledComponent(props: P) {
+  return function ProfiledComponent(props: React.PropsWithChildren<P>) {
     return (
       <React.Profiler
         id={componentName}
-        onRender={(id, phase, actualDuration) => {
-          if (actualDuration > 16) { // Log slow renders (>16ms)
-            console.warn(`Slow render in ${id} (${phase}): ${actualDuration.toFixed(2)}ms`);
+        onRender={(_id, phase, actualDuration) => {
+          if (actualDuration > 16) {
+            // Consider logging to analytics endpoint in production
+            console.warn(
+              `Slow render in ${componentName} (${phase}): ${actualDuration.toFixed(2)}ms`
+            );
           }
         }}
       >

@@ -1,7 +1,49 @@
-// src/lib/seed-data.ts
 import { Timestamp } from 'firebase/firestore';
 
-export const workers = [
+// Type definitions
+type Gender = 'male' | 'female';
+type Status = 'active' | 'pending';
+type AvailabilityType = 'full-time' | 'part-time';
+type Preference = 'one-time' | 'recurring';
+
+interface EmergencyContact {
+  name: string;
+  phone: string;
+  relationship: string;
+}
+
+interface Availability {
+  days: string[];
+  hours: string;
+  type: AvailabilityType;
+  preferences: Preference[];
+}
+
+interface Worker {
+  fullName: string;
+  phone: string;
+  email: string;
+  dob: Timestamp;
+  gender: Gender;
+  nationalId: string;
+  district: string;
+  sector: string;
+  address: string;
+  emergencyContact: EmergencyContact;
+  experienceYears: number;
+  bio: string;
+  skills: string[];
+  languages: string[];
+  availability: Availability;
+  rating: number;
+  reviewsCount: number;
+  hourlyRate: number;
+  status: Status;
+  profilePictureUrl: string;
+  dateJoined: Timestamp;
+}
+
+export const workers: Worker[] = [
   {
     fullName: 'Aline Uwamahoro',
     phone: '0781234567',
@@ -101,7 +143,7 @@ export const workers = [
   {
     fullName: 'Olivier Kwizera',
     phone: '0729876543',
-    email: '', // No email provided
+    email: '',
     dob: Timestamp.fromDate(new Date('2000-01-30')),
     gender: 'male',
     nationalId: '1200070011223344',
@@ -130,7 +172,7 @@ export const workers = [
     profilePictureUrl: 'https://placehold.co/200x200.png',
     dateJoined: Timestamp.fromDate(new Date('2024-03-01')),
   },
-    {
+  {
     fullName: 'Solange Umutoni',
     phone: '0785556677',
     email: 'solange.umutoni@example.com',

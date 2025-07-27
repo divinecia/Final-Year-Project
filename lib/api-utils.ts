@@ -1,3 +1,6 @@
+/**
+ * Standard API response interface.
+ */
 export interface ApiResponse<T = any> {
   success: boolean
   data?: T
@@ -5,15 +8,26 @@ export interface ApiResponse<T = any> {
   error?: string
 }
 
-export interface PaginatedResponse<T> extends ApiResponse<T[]> {
-  pagination?: {
-    total: number
-    page: number
-    limit: number
-    hasMore: boolean
-  }
+/**
+ * Pagination metadata.
+ */
+export interface Pagination {
+  total: number
+  page: number
+  limit: number
+  hasMore: boolean
 }
 
+/**
+ * Paginated API response.
+ */
+export interface PaginatedResponse<T> extends ApiResponse<T[]> {
+  pagination?: Pagination
+}
+
+/**
+ * Custom API error class.
+ */
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -22,75 +36,87 @@ export class ApiError extends Error {
   ) {
     super(message)
     this.name = 'ApiError'
+    Object.setPrototypeOf(this, ApiError.prototype)
   }
 }
 
-const apiResponseCache = new Map<string, any>();
+interface CacheEntry<T> {
+  data: T
+  timestamp: number
+}
 
+const apiResponseCache = new Map<string, CacheEntry<any>>()
+
+/**
+ * Handles API responses with optional caching.
+ */
 export async function handleApiResponse<T>(
   fn: () => Promise<T>,
   cacheKey?: string,
-  cacheTTL = 60000 // 1 minute cache by default
+  cacheTTL = 60_000 // 1 minute cache by default
 ): Promise<ApiResponse<T>> {
   try {
-    if (cacheKey && apiResponseCache.has(cacheKey)) {
-      const cached = apiResponseCache.get(cacheKey);
-      if (Date.now() - cached.timestamp < cacheTTL) {
+    if (cacheKey) {
+      const cached = apiResponseCache.get(cacheKey)
+      if (cached && Date.now() - cached.timestamp < cacheTTL) {
         return {
           success: true,
           data: cached.data,
           message: 'Operation completed successfully (from cache)'
-        };
-      } else {
-        apiResponseCache.delete(cacheKey);
+        }
       }
+      apiResponseCache.delete(cacheKey)
     }
 
-    const result = await fn();
+    const result = await fn()
 
     if (cacheKey) {
-      apiResponseCache.set(cacheKey, { data: result, timestamp: Date.now() });
+      apiResponseCache.set(cacheKey, { data: result, timestamp: Date.now() })
     }
 
     return {
       success: true,
       data: result,
       message: 'Operation completed successfully'
-    };
-  } catch (error) {
-    console.error('API Error:', error);
-    
+    }
+  } catch (error: any) {
+    console.error('API Error:', error)
     if (error instanceof ApiError) {
       return {
         success: false,
         error: error.message,
         message: error.message
-      };
+      }
     }
-    
     return {
       success: false,
-      error: 'An unexpected error occurred',
+      error: error?.message || 'An unexpected error occurred',
       message: 'Something went wrong. Please try again.'
-    };
+    }
   }
 }
 
+/**
+ * Creates a successful API response.
+ */
 export function createApiResponse<T>(
   data: T,
-  message?: string
+  message = 'Success'
 ): ApiResponse<T> {
   return {
     success: true,
     data,
-    message: message || 'Success'
+    message
   }
 }
 
+/**
+ * Creates a failed API response.
+ */
 export function createApiError(
   message: string,
   statusCode?: number
-): ApiResponse {
+): ApiResponse<never> {
   return {
     success: false,
     error: message,
@@ -98,32 +124,36 @@ export function createApiError(
   }
 }
 
-// Retry utility for failed requests
+/**
+ * Retry utility for failed requests.
+ */
 export async function withRetry<T>(
   fn: () => Promise<T>,
   maxRetries = 3,
   delay = 1000
 ): Promise<T> {
-  let lastError: Error
+  let lastError: unknown
 
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await fn()
     } catch (error) {
-      lastError = error as Error
+      lastError = error
       if (i < maxRetries - 1) {
         await new Promise(resolve => setTimeout(resolve, delay * (i + 1)))
       }
     }
   }
 
-  throw lastError!
+  throw lastError
 }
 
-// Request timeout utility
+/**
+ * Request timeout utility.
+ */
 export function withTimeout<T>(
   promise: Promise<T>,
-  timeoutMs = 10000
+  timeoutMs = 10_000
 ): Promise<T> {
   return Promise.race([
     promise,

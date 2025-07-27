@@ -1,15 +1,15 @@
 "use client"
 
 import * as React from "react"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Label } from "@/components/ui/label"
-import { Slider } from "@/components/ui/slider"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Search, Filter, X } from "lucide-react"
-import { serviceOptions } from "@/lib/services"
-import { Badge } from "@/components/ui/badge"
+import { Input } from "../components/ui/input"
+import { Button } from "../components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
+import { Label } from "../components/ui/label"
+import { Slider } from "../components/ui/slider"
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
+import { Search, Filter, X, Loader2 } from "lucide-react"
+import { serviceOptions } from "../lib/services"
+import { Badge } from "../components/ui/badge"
 
 export interface SearchFilters {
   query: string
@@ -30,11 +30,14 @@ interface SearchComponentProps {
 export function SearchComponent({ filters, onFiltersChange, onSearch, loading }: SearchComponentProps) {
   const [showAdvanced, setShowAdvanced] = React.useState(false)
 
-  const updateFilter = (key: keyof SearchFilters, value: any) => {
-    onFiltersChange({ ...filters, [key]: value })
-  }
+  const updateFilter = React.useCallback(
+    (key: keyof SearchFilters, value: any) => {
+      onFiltersChange({ ...filters, [key]: value })
+    },
+    [filters, onFiltersChange]
+  )
 
-  const clearFilters = () => {
+  const clearFilters = React.useCallback(() => {
     onFiltersChange({
       query: "",
       serviceType: "",
@@ -43,15 +46,17 @@ export function SearchComponent({ filters, onFiltersChange, onSearch, loading }:
       maxPrice: 100,
       availability: ""
     })
-  }
+  }, [onFiltersChange])
 
-  const activeFiltersCount = [
-    filters.serviceType,
-    filters.location,
-    filters.minRating > 0,
-    filters.maxPrice < 100,
-    filters.availability
-  ].filter(Boolean).length
+  const activeFiltersCount = React.useMemo(() => {
+    let count = 0
+    if (filters.serviceType) count++
+    if (filters.location) count++
+    if (filters.minRating > 0) count++
+    if (filters.maxPrice < 100) count++
+    if (filters.availability) count++
+    return count
+  }, [filters])
 
   return (
     <Card>
@@ -61,7 +66,8 @@ export function SearchComponent({ filters, onFiltersChange, onSearch, loading }:
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setShowAdvanced(!showAdvanced)}
+            aria-label="Toggle advanced filters"
+            onClick={() => setShowAdvanced((prev) => !prev)}
           >
             <Filter className="mr-2 h-4 w-4" />
             Filters {activeFiltersCount > 0 && <Badge className="ml-2">{activeFiltersCount}</Badge>}
@@ -73,11 +79,15 @@ export function SearchComponent({ filters, onFiltersChange, onSearch, loading }:
           <Input
             placeholder="Search by name or service..."
             value={filters.query}
-            onChange={(e) => updateFilter("query", e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFilter("query", e.target.value)}
             className="flex-1"
+            aria-label="Search input"
+            onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+              if (e.key === "Enter") onSearch()
+            }}
           />
-          <Button onClick={onSearch} disabled={loading}>
-            <Search className="h-4 w-4" />
+          <Button onClick={onSearch} disabled={loading} aria-label="Search">
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
           </Button>
         </div>
 
@@ -88,14 +98,14 @@ export function SearchComponent({ filters, onFiltersChange, onSearch, loading }:
                 <Label htmlFor="service">Service Type</Label>
                 <Select
                   value={filters.serviceType}
-                  onValueChange={(value) => updateFilter("serviceType", value)}
+                  onValueChange={(value: string) => updateFilter("serviceType", value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Any service" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">Any service</SelectItem>
-                    {serviceOptions.map((service) => (
+                    {serviceOptions.map((service: { id: string; label: string }) => (
                       <SelectItem key={service.id} value={service.id}>
                         {service.label}
                       </SelectItem>
@@ -108,7 +118,7 @@ export function SearchComponent({ filters, onFiltersChange, onSearch, loading }:
                 <Label htmlFor="location">Location</Label>
                 <Select
                   value={filters.location}
-                  onValueChange={(value) => updateFilter("location", value)}
+                  onValueChange={(value: string) => updateFilter("location", value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Any location" />
@@ -129,11 +139,12 @@ export function SearchComponent({ filters, onFiltersChange, onSearch, loading }:
               <Label>Minimum Rating: {filters.minRating}/5</Label>
               <Slider
                 value={[filters.minRating]}
-                onValueChange={(value) => updateFilter("minRating", value[0])}
+                onValueChange={(value: number[]) => updateFilter("minRating", value[0])}
                 max={5}
                 min={0}
                 step={0.5}
                 className="w-full"
+                aria-label="Minimum rating"
               />
             </div>
 
@@ -141,11 +152,12 @@ export function SearchComponent({ filters, onFiltersChange, onSearch, loading }:
               <Label>Maximum Price: ${filters.maxPrice}</Label>
               <Slider
                 value={[filters.maxPrice]}
-                onValueChange={(value) => updateFilter("maxPrice", value[0])}
+                onValueChange={(value: number[]) => updateFilter("maxPrice", value[0])}
                 max={100}
                 min={5}
                 step={5}
                 className="w-full"
+                aria-label="Maximum price"
               />
             </div>
 
@@ -153,7 +165,7 @@ export function SearchComponent({ filters, onFiltersChange, onSearch, loading }:
               <Label htmlFor="availability">Availability</Label>
               <Select
                 value={filters.availability}
-                onValueChange={(value) => updateFilter("availability", value)}
+                onValueChange={(value: string) => updateFilter("availability", value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Any time" />
@@ -168,11 +180,12 @@ export function SearchComponent({ filters, onFiltersChange, onSearch, loading }:
             </div>
 
             <div className="flex justify-between">
-              <Button variant="outline" onClick={clearFilters}>
+              <Button variant="outline" onClick={clearFilters} aria-label="Clear filters">
                 <X className="mr-2 h-4 w-4" />
                 Clear Filters
               </Button>
-              <Button onClick={onSearch} disabled={loading}>
+              <Button onClick={onSearch} disabled={loading} aria-label="Apply filters">
+                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 {loading ? "Searching..." : "Apply Filters"}
               </Button>
             </div>

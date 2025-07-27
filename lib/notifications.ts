@@ -3,37 +3,58 @@
 import { db } from '@/lib/firebase';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 
+type UserType = 'household' | 'worker' | 'admin';
+type NotificationType = 'info' | 'success' | 'warning' | 'error';
+
+interface NotificationData {
+    title: string;
+    description: string;
+    type: NotificationType;
+    userId: string;
+    userType: UserType;
+    jobId?: string | null;
+    paymentId?: string | null;
+    read: boolean;
+    createdAt: Timestamp;
+}
+
+interface NotificationResult {
+    success: boolean;
+    error?: string;
+}
+
 /**
  * Creates a notification for a user according to the standardized schema
  */
 export async function createNotification(
     userId: string,
-    userType: 'household' | 'worker' | 'admin',
+    userType: UserType,
     title: string,
     description: string,
-    type: 'info' | 'success' | 'warning' | 'error' = 'info',
+    type: NotificationType = 'info',
     jobId?: string,
     paymentId?: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<NotificationResult> {
     try {
         const notificationsCollection = collection(db, 'notifications');
-        
-        await addDoc(notificationsCollection, {
+        const notification: NotificationData = {
             title,
             description,
             type,
             userId,
             userType,
-            jobId: jobId || null,
-            paymentId: paymentId || null,
+            jobId: jobId ?? null,
+            paymentId: paymentId ?? null,
             read: false,
             createdAt: Timestamp.now(),
-        });
+        };
+
+        await addDoc(notificationsCollection, notification);
 
         return { success: true };
     } catch (error) {
-        console.error("Error creating notification: ", error);
-        return { success: false, error: "Failed to create notification." };
+        console.error('Error creating notification:', error);
+        return { success: false, error: (error instanceof Error ? error.message : 'Failed to create notification.') };
     }
 }
 
@@ -42,12 +63,12 @@ export async function createNotification(
  */
 export async function createJobNotification(
     userId: string,
-    userType: 'household' | 'worker' | 'admin',
+    userType: UserType,
     jobId: string,
     title: string,
     description: string,
-    type: 'info' | 'success' | 'warning' | 'error' = 'info'
-): Promise<{ success: boolean; error?: string }> {
+    type: NotificationType = 'info'
+): Promise<NotificationResult> {
     return createNotification(userId, userType, title, description, type, jobId);
 }
 
@@ -56,11 +77,11 @@ export async function createJobNotification(
  */
 export async function createPaymentNotification(
     userId: string,
-    userType: 'household' | 'worker' | 'admin',
+    userType: UserType,
     paymentId: string,
     title: string,
     description: string,
-    type: 'info' | 'success' | 'warning' | 'error' = 'info'
-): Promise<{ success: boolean; error?: string }> {
+    type: NotificationType = 'info'
+): Promise<NotificationResult> {
     return createNotification(userId, userType, title, description, type, undefined, paymentId);
 }

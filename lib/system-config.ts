@@ -6,7 +6,7 @@ export interface PayFrequency {
   id: string;
   label: string;
   description: string;
-  multiplier: number; // For calculating from hourly rate
+  multiplier: number;
 }
 
 export interface JobStatus {
@@ -31,12 +31,14 @@ export interface PaymentStatus {
 }
 
 export interface SystemConfig {
-  payFrequencies: { [key: string]: PayFrequency };
-  jobStatuses: { [key: string]: JobStatus };
-  userRoles: { [key: string]: UserRole };
-  paymentStatuses: { [key: string]: PaymentStatus };
+  payFrequencies: Record<string, PayFrequency>;
+  jobStatuses: Record<string, JobStatus>;
+  userRoles: Record<string, UserRole>;
+  paymentStatuses: Record<string, PaymentStatus>;
   lastUpdated: string;
 }
+
+type Option<T extends { id: string; label: string }> = Pick<T, 'id' | 'label'> & Partial<T>;
 
 // Cache for system configuration
 let systemConfigCache: SystemConfig | null = null;
@@ -44,103 +46,113 @@ let configCacheTime = 0;
 const CONFIG_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 
 /**
- * Get system configuration from Firestore
+ * Type guard for SystemConfig
+ */
+function isSystemConfig(data: any): data is SystemConfig {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    typeof data.payFrequencies === 'object' &&
+    typeof data.jobStatuses === 'object' &&
+    typeof data.userRoles === 'object' &&
+    typeof data.paymentStatuses === 'object' &&
+    typeof data.lastUpdated === 'string'
+  );
+}
+
+/**
+ * Get system configuration from Firestore, with caching and fallback.
  */
 export async function getSystemConfig(): Promise<SystemConfig> {
   const now = Date.now();
-  
-  // Return cached data if still valid
-  if (systemConfigCache && (now - configCacheTime) < CONFIG_CACHE_DURATION) {
+
+  if (systemConfigCache && now - configCacheTime < CONFIG_CACHE_DURATION) {
     return systemConfigCache;
   }
 
   try {
     const configDoc = await getDoc(doc(db, 'system', 'config'));
-    
     if (configDoc.exists()) {
-      const data = configDoc.data() as SystemConfig;
-      systemConfigCache = data;
-      configCacheTime = now;
-      return data;
+      const data = configDoc.data();
+      if (isSystemConfig(data)) {
+        systemConfigCache = data;
+        configCacheTime = now;
+        return data;
+      }
+      throw new Error('Invalid system config structure');
     } else {
       throw new Error('System config document not found');
     }
   } catch (error) {
     console.error('Error fetching system config:', error);
-    
-    // Return fallback data if Firestore fails
     return getFallbackSystemConfig();
   }
 }
 
 /**
- * Get pay frequency options for dropdowns
+ * Generic helper to map options for dropdowns.
  */
-export async function getPayFrequencyOptions(): Promise<Array<{ id: string; label: string; description: string }>> {
-  const config = await getSystemConfig();
-  
-  return Object.values(config.payFrequencies).map(freq => ({
-    id: freq.id,
-    label: freq.label,
-    description: freq.description
-  }));
+function mapOptions<T extends { id: string; label: string }>(
+  items: Record<string, T>,
+  fields: Array<keyof T>
+): Option<T>[] {
+  return Object.values(items).map(item => {
+    const option: any = { id: item.id, label: item.label };
+    for (const field of fields) {
+      if (field !== 'id' && field !== 'label') {
+        option[field] = item[field];
+      }
+    }
+    return option;
+  });
 }
 
 /**
- * Get job status options for dropdowns
+ * Get pay frequency options for dropdowns.
  */
-export async function getJobStatusOptions(): Promise<Array<{ id: string; label: string; color: string }>> {
+export async function getPayFrequencyOptions(): Promise<Option<PayFrequency>[]> {
   const config = await getSystemConfig();
-  
-  return Object.values(config.jobStatuses).map(status => ({
-    id: status.id,
-    label: status.label,
-    color: status.color
-  }));
+  return mapOptions(config.payFrequencies, ['description']);
 }
 
 /**
- * Get user role options for dropdowns
+ * Get job status options for dropdowns.
  */
-export async function getUserRoleOptions(): Promise<Array<{ id: string; label: string; description: string }>> {
+export async function getJobStatusOptions(): Promise<Option<JobStatus>[]> {
   const config = await getSystemConfig();
-  
-  return Object.values(config.userRoles).map(role => ({
-    id: role.id,
-    label: role.label,
-    description: role.description
-  }));
+  return mapOptions(config.jobStatuses, ['color']);
 }
 
 /**
- * Get payment status options for dropdowns
+ * Get user role options for dropdowns.
  */
-export async function getPaymentStatusOptions(): Promise<Array<{ id: string; label: string; color: string }>> {
+export async function getUserRoleOptions(): Promise<Option<UserRole>[]> {
   const config = await getSystemConfig();
-  
-  return Object.values(config.paymentStatuses).map(status => ({
-    id: status.id,
-    label: status.label,
-    color: status.color
-  }));
+  return mapOptions(config.userRoles, ['description']);
 }
 
 /**
- * Calculate salary based on pay frequency
+ * Get payment status options for dropdowns.
+ */
+export async function getPaymentStatusOptions(): Promise<Option<PaymentStatus>[]> {
+  const config = await getSystemConfig();
+  return mapOptions(config.paymentStatuses, ['color']);
+}
+
+/**
+ * Calculate salary based on pay frequency.
+ * @param baseHourlyRate - The base hourly rate.
+ * @param payFrequencyId - The pay frequency identifier.
+ * @returns The calculated salary.
  */
 export async function calculateSalary(baseHourlyRate: number, payFrequencyId: string): Promise<number> {
   const config = await getSystemConfig();
   const frequency = config.payFrequencies[payFrequencyId];
-  
-  if (!frequency) {
-    return baseHourlyRate;
-  }
-  
-  return baseHourlyRate * frequency.multiplier;
+  return frequency ? baseHourlyRate * frequency.multiplier : baseHourlyRate;
 }
 
 /**
- * Fallback system configuration (offline/error fallback)
+ * Fallback system configuration (offline/error fallback).
  */
 function getFallbackSystemConfig(): SystemConfig {
   return {
@@ -255,11 +267,11 @@ function getFallbackSystemConfig(): SystemConfig {
       }
     },
     lastUpdated: new Date().toISOString()
-  };
+  } as const;
 }
 
 /**
- * Clear configuration cache (useful for testing or forced refresh)
+ * Clear configuration cache (useful for testing or forced refresh).
  */
 export function clearSystemConfigCache(): void {
   systemConfigCache = null;

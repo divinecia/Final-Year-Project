@@ -2,14 +2,16 @@
 
 import * as React from "react"
 import { Bell, Check, X } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { useAuth } from "@/hooks/use-auth"
-import { useToast } from "@/hooks/use-toast"
-import { db } from "@/lib/firebase"
+import { Button } from "../components/ui/button"
+// Update the import path below if your Card components are located elsewhere
+import { Card, CardContent } from "../components/ui/card"
+import { Badge } from "../components/ui/badge"
+import { ScrollArea } from "../components/ui/scroll-area"
+import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover"
+// Adjust the import based on the actual export from use-auth
+import useAuth from "../hooks/use-auth"
+import { useToast } from "../hooks/use-toast"
+import { db } from "../lib/firebase"
 import { doc, updateDoc, deleteDoc, writeBatch, collection, query, where, orderBy, onSnapshot } from "firebase/firestore"
 
 export interface Notification {
