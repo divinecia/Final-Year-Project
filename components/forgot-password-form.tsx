@@ -1,0 +1,37 @@
+import { useState } from "react";
+import { getAuth, sendPasswordResetEmail } from "firebase/auth";
+import app from "@/lib/firebase";
+
+export default function ForgotPasswordForm() {
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMessage("");
+    setError("");
+    const auth = getAuth(app);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setMessage("Password reset email sent! Check your inbox.");
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        type="email"
+        placeholder="Enter your email"
+        value={email}
+        onChange={e => setEmail(e.target.value)}
+        required
+      />
+      <button type="submit">Send Reset Email</button>
+      {message && <div style={{ color: "green" }}>{message}</div>}
+      {error && <div style={{ color: "red" }}>{error}</div>}
+    </form>
+  );
+}

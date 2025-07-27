@@ -21,6 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import { app } from "@/lib/firebase";
+import ForgotPasswordForm from "@/components/forgot-password-form";
 
 const formSchema = z.object({
   contactInfo: z.string().min(1, "Please enter your phone number."),
@@ -79,46 +80,50 @@ export default function ForgotPasswordPage() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-6 bg-gray-50">
-        <div id="recaptcha-container"></div>
-        <div className="w-full max-w-md space-y-4">
-            <Card>
-                <CardHeader className="text-center">
-                    <CardTitle>Reset Your Password</CardTitle>
-                    <CardDescription>Enter your registered phone number to receive a reset code.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                            <FormField
-                                control={form.control}
-                                name="contactInfo"
-                                render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Phone Number</FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            type='tel'
-                                            placeholder='07...'
-                                            {...field}
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                                )}
-                            />
-                            <Button type="submit" className="w-full" disabled={isSending}>
-                                {isSending ? "Sending..." : "Send Reset Code"}
-                            </Button>
-                        </form>
-                    </Form>
-                </CardContent>
-            </Card>
-            <div className="mt-4 text-center text-sm">
-                <Button variant="link" asChild>
-                    <Link href="/worker/login">Back to Login</Link>
+      <div id="recaptcha-container"></div>
+      <div className="w-full max-w-md space-y-4">
+        <Card>
+          <CardHeader className="text-center">
+            <CardTitle>Reset Your Password</CardTitle>
+            <CardDescription>Enter your registered phone number or email to receive a reset code or link.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* Phone reset form */}
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="contactInfo"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone Number</FormLabel>
+                      <FormControl>
+                        <Input
+                          type='tel'
+                          placeholder='07...'
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" className="w-full" disabled={isSending}>
+                  {isSending ? "Sending..." : "Send Reset Code"}
                 </Button>
-            </div>
+              </form>
+            </Form>
+            <div className="my-4 text-center text-xs text-gray-400">OR</div>
+            {/* Email reset form */}
+            <ForgotPasswordForm />
+          </CardContent>
+        </Card>
+        <div className="mt-4 text-center text-sm">
+          <Button variant="link" asChild>
+            <Link href="/worker/login">Back to Login</Link>
+          </Button>
         </div>
+      </div>
     </main>
   );
 }
