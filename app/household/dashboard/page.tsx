@@ -124,7 +124,13 @@ export default function HouseholdDashboardPage() {
             <Link href={`/household/services/${service.id}`} key={service.id}>
               <Card className="text-center h-full hover:shadow-md transition-shadow">
                 <CardContent className="p-4 flex flex-col items-center justify-center gap-2">
-                  <div className="h-8 w-8 text-primary">{service.icon}</div>
+                  <div className="h-8 w-8 text-primary">
+                    {React.isValidElement(service.icon)
+                      ? service.icon
+                      : typeof service.icon === "function"
+                        ? React.createElement(service.icon)
+                        : null}
+                  </div>
                   <p className="font-semibold text-sm">{service.name}</p>
                 </CardContent>
               </Card>

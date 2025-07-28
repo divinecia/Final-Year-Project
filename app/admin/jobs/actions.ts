@@ -1,3 +1,28 @@
+export async function approveJob(jobId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+        const jobRef = doc(db, 'jobs', jobId);
+        await updateDoc(jobRef, {
+            status: 'open',
+            updatedAt: Timestamp.now(),
+        });
+        revalidatePath('/admin/jobs');
+        revalidatePath('/household/bookings');
+        // Optionally notify household
+        const jobSnap = await getDoc(jobRef);
+        const jobData = jobSnap.data();
+        if (jobData?.householdId) {
+            await createNotification(
+                jobData.householdId,
+                'Job Approved',
+                `Your job "${jobData.jobTitle}" has been approved and is now visible to workers.`
+            );
+        }
+        return { success: true };
+    } catch (error) {
+        console.error("Error approving job: ", error);
+        return { success: false, error: 'Failed to approve job.' };
+    }
+}
 
 'use server';
 
@@ -11,7 +36,7 @@ export type Job = {
     householdName: string;
     workerName?: string | null;
     serviceType: string;
-    status: 'open' | 'assigned' | 'completed' | 'cancelled';
+    status: 'pending' | 'open' | 'assigned' | 'completed' | 'cancelled';
     createdAt: string;
 };
 

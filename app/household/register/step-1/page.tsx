@@ -1,3 +1,145 @@
+// Kigali, Southern, Western, Northern, Eastern Province locations
+type DistrictKey = keyof typeof locations.districts;
+type SectorKey<D extends DistrictKey> = keyof typeof locations.districts[D]["sectors"];
+const locations = {
+  districts: {
+    gasabo: {
+      name: "Gasabo",
+      province: "Kigali City",
+      code: "11",
+      sectors: {
+        bumbogo: { name: "Bumbogo", code: "1101" },
+        gatsata: { name: "Gatsata", code: "1102" },
+        gikomero: { name: "Gikomero", code: "1103" },
+        gisozi: { name: "Gisozi", code: "1104" },
+        jabana: { name: "Jabana", code: "1105" },
+        jali: { name: "Jali", code: "1106" },
+        kacyiru: { name: "Kacyiru", code: "1107" },
+        kimihurura: { name: "Kimihurura", code: "1108" },
+        kimironko: { name: "Kimironko", code: "1109" },
+        kinyinya: { name: "Kinyinya", code: "1110" },
+        ndera: { name: "Ndera", code: "1111" },
+        nduba: { name: "Nduba", code: "1112" },
+        remera: { name: "Remera", code: "1113" },
+        rusororo: { name: "Rusororo", code: "1114" },
+        rutunga: { name: "Rutunga", code: "1115" }
+      }
+    },
+    kicukiro: {
+      name: "Kicukiro",
+      province: "Kigali City",
+      code: "12",
+      sectors: {
+        gahanga: { name: "Gahanga", code: "1201" },
+        gatenga: { name: "Gatenga", code: "1202" },
+        gikondo: { name: "Gikondo", code: "1203" },
+        kagarama: { name: "Kagarama", code: "1204" },
+        kanombe: { name: "Kanombe", code: "1205" },
+        kicukiro: { name: "Kicukiro", code: "1206" },
+        masaka: { name: "Masaka", code: "1207" },
+        niboye: { name: "Niboye", code: "1208" },
+        nyarugunga: { name: "Nyarugunga", code: "1209" },
+        rwebitaba: { name: "Rwebitaba", code: "1210" }
+      }
+    },
+    nyarugenge: {
+      name: "Nyarugenge",
+      province: "Kigali City",
+      code: "13",
+      sectors: {
+        gitega: { name: "Gitega", code: "1301" },
+        kimisagara: { name: "Kimisagara", code: "1302" },
+        kugirema: { name: "Kugirema", code: "1303" },
+        mageragere: { name: "Mageragere", code: "1304" },
+        muhima: { name: "Muhima", code: "1305" },
+        nyakabanda: { name: "Nyakabanda", code: "1306" },
+        nyamirambo: { name: "Nyamirambo", code: "1307" },
+        nyarugenge: { name: "Nyarugenge", code: "1308" },
+        rwezamenyo: { name: "Rwezamenyo", code: "1309" }
+      }
+    },
+    muhanga: {
+      name: "Muhanga",
+      province: "Southern Province",
+      code: "22",
+      sectors: {
+        cyeza: { name: "Cyeza", code: "2201" },
+        kabacuzi: { name: "Kabacuzi", code: "2202" },
+        kibangu: { name: "Kibangu", code: "2203" },
+        kiyumba: { name: "Kiyumba", code: "2204" },
+        muhanga: { name: "Muhanga", code: "2205" },
+        mukura: { name: "Mukura", code: "2206" },
+        mushishiro: { name: "Mushishiro", code: "2207" },
+        nyabindu: { name: "Nyabindu", code: "2208" },
+        nyamabuye: { name: "Nyamabuye", code: "2209" },
+        nyarubaka: { name: "Nyarubaka", code: "2210" },
+        rongi: { name: "Rongi", code: "2211" },
+        rugendabari: { name: "Rugendabari", code: "2212" }
+      }
+    },
+    karongi: {
+      name: "Karongi",
+      province: "Western Province",
+      code: "31",
+      sectors: {
+        bwishyura: { name: "Bwishyura", code: "3101" },
+        gashari: { name: "Gashari", code: "3102" },
+        gitesi: { name: "Gitesi", code: "3103" },
+        kivumu: { name: "Kivumu", code: "3104" },
+        mutuntu: { name: "Mutuntu", code: "3105" },
+        rugabano: { name: "Rugabano", code: "3106" },
+        ruganda: { name: "Ruganda", code: "3107" },
+        murambi: { name: "Murambi", code: "3108" },
+        gishyita: { name: "Gishyita", code: "3109" },
+        twumba: { name: "Twumba", code: "3110" }
+      }
+    },
+    musanze: {
+      name: "Musanze",
+      province: "Northern Province",
+      code: "41",
+      sectors: {
+        busogo: { name: "Busogo", code: "4101" },
+        cyuve: { name: "Cyuve", code: "4102" },
+        gacaca: { name: "Gacaca", code: "4103" },
+        gashaki: { name: "Gashaki", code: "4104" },
+        gataraga: { name: "Gataraga", code: "4105" },
+        kimonyi: { name: "Kimonyi", code: "4106" },
+        kinigi: { name: "Kinigi", code: "4107" },
+        muhoza: { name: "Muhoza", code: "4108" },
+        muko: { name: "Muko", code: "4109" },
+        musanze: { name: "Musanze", code: "4110" },
+        nkotsi: { name: "Nkotsi", code: "4111" },
+        nyange: { name: "Nyange", code: "4112" },
+        remera: { name: "Remera", code: "4113" },
+        rwaza: { name: "Rwaza", code: "4114" },
+        shingiro: { name: "Shingiro", code: "4115" }
+      }
+    },
+    rwamagana: {
+      name: "Rwamagana",
+      province: "Eastern Province",
+      code: "51",
+      sectors: {
+        fumbwe: { name: "Fumbwe", code: "5101" },
+        gahengeri: { name: "Gahengeri", code: "5102" },
+        gishari: { name: "Gishari", code: "5103" },
+        karenge: { name: "Karenge", code: "5104" },
+        kigabiro: { name: "Kigabiro", code: "5105" },
+        muhazi: { name: "Muhazi", code: "5106" },
+        munyaga: { name: "Munyaga", code: "5107" },
+        munyiginya: { name: "Munyiginya", code: "5108" },
+        musha: { name: "Musha", code: "5109" },
+        muyumbu: { name: "Muyumbu", code: "5110" },
+        nyakaliro: { name: "Nyakaliro", code: "5111" },
+        nzige: { name: "Nzige", code: "5112" },
+        rubona: { name: "Rubona", code: "5113" },
+        rukira: { name: "Rukira", code: "5114" }
+      }
+    }
+  },
+  lastUpdated: "2024-07-22T00:00:00Z"
+};
 "use client";
 
 import * as React from "react";
@@ -29,6 +171,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useFormContext } from "../form-provider";
+import { OAuthButtons } from "@/components/oauth-buttons";
 
 const Step1Schema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters."),
@@ -37,7 +180,15 @@ const Step1Schema = z.object({
   district: z.string({ required_error: "Please select a district." }),
   sector: z.string({ required_error: "Please select a sector." }),
   address: z.string().min(5, "Please enter a detailed address."),
-  propertyType: z.enum(["house", "apartment", "villa"], { required_error: "Please select a property type."}),
+  propertyType: z.enum([
+    "single_family",
+    "apartment",
+    "townhouse",
+    "condominium",
+    "villa",
+    "duplex",
+    "servant_quarters"
+  ], { required_error: "Please select a property type." }),
   numRooms: z.coerce.number().min(1, "Must have at least one room."),
   hasGarden: z.enum(["yes", "no"]),
 });
@@ -45,6 +196,7 @@ const Step1Schema = z.object({
 export default function HouseholdRegisterStep1Page() {
   const router = useRouter();
   const { formData, setFormData } = useFormContext();
+  const [submitError, setSubmitError] = React.useState<string | null>(null);
 
   const form = useForm<z.infer<typeof Step1Schema>>({
     resolver: zodResolver(Step1Schema),
@@ -56,15 +208,20 @@ export default function HouseholdRegisterStep1Page() {
       district: formData.district || undefined,
       sector: formData.sector || undefined,
       address: formData.address || "",
-      propertyType: formData.propertyType || "house",
+      propertyType: (formData.propertyType as z.infer<typeof Step1Schema>["propertyType"]) || "single_family",
       numRooms: formData.numRooms || 1,
       hasGarden: formData.hasGarden || "no",
     },
   });
 
-  function onSubmit(values: z.infer<typeof Step1Schema>) {
-    setFormData((prev: any) => ({ ...prev, ...values }));
-    router.push("/household/register/step-2");
+  async function onSubmit(values: z.infer<typeof Step1Schema>) {
+    setSubmitError(null);
+    try {
+      setFormData((prev: any) => ({ ...prev, ...values }));
+      router.push("/household/register/step-2");
+    } catch (err) {
+      setSubmitError("Registration failed, unexpected error occurred. Please try again.");
+    }
   }
 
   return (
@@ -76,6 +233,20 @@ export default function HouseholdRegisterStep1Page() {
           <CardDescription>Step 1: Basic Information</CardDescription>
         </CardHeader>
         <CardContent>
+          {/* OAuth registration options */}
+          <div className="mb-6">
+            <p className="text-center text-sm mb-2">Register with:</p>
+            <div className="flex justify-center gap-4">
+              <OAuthButtons
+                onSuccess={(uid, email) => {
+                  setFormData((prev: any) => ({ ...prev, email }));
+                  router.push("/household/register/step-2");
+                }}
+                userType="household"
+              />
+            </div>
+            <div className="text-center text-xs text-muted-foreground mt-2">or fill out the form below</div>
+          </div>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               
@@ -134,41 +305,33 @@ export default function HouseholdRegisterStep1Page() {
                   </FormItem>
                 )}
                 />
-                <FormField
+              <FormField
                 control={form.control}
                 name="sector"
-                render={({ field }) => (
-                  <FormItem>
-                  <FormLabel>Sector (matched to district)</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Select your sector" /></SelectTrigger></FormControl>
-                    <SelectContent>
-                    {form.watch("district") === "gasabo" && (
-                      <>
-                      <SelectItem value="kimihurura">Kimihurura</SelectItem>
-                      <SelectItem value="kacyiru">Kacyiru</SelectItem>
-                      <SelectItem value="remera">Remera</SelectItem>
-                      </>
-                    )}
-                    {form.watch("district") === "kicukiro" && (
-                      <>
-                      <SelectItem value="kagarama">Kagarama</SelectItem>
-                      <SelectItem value="kanombe">Kanombe</SelectItem>
-                      <SelectItem value="gatenga">Gatenga</SelectItem>
-                      </>
-                    )}
-                    {form.watch("district") === "nyarugenge" && (
-                      <>
-                      <SelectItem value="nyamirambo">Nyamirambo</SelectItem>
-                      <SelectItem value="nyakabanda">Nyakabanda</SelectItem>
-                      <SelectItem value="gitega">Gitega</SelectItem>
-                      </>
-                    )}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  const selectedDistrict = form.watch("district") as DistrictKey;
+                  const sectorOptions = selectedDistrict && locations.districts[selectedDistrict]?.sectors
+                    ? Object.entries(locations.districts[selectedDistrict].sectors as Record<string, { name: string; code: string }>)
+                    : [];
+                  return (
+                    <FormItem>
+                      <FormLabel>Sector (matched to district)</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Select your sector" /></SelectTrigger></FormControl>
+                        <SelectContent>
+                          {sectorOptions.length > 0 ? (
+                            sectorOptions.map(([key, sector]) => (
+                              <SelectItem key={key} value={key}>{sector.name}</SelectItem>
+                            ))
+                          ) : (
+                            <SelectItem value="" disabled>No sectors available</SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
               <FormField
                 control={form.control}
@@ -194,9 +357,13 @@ export default function HouseholdRegisterStep1Page() {
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                       <SelectContent>
-                        <SelectItem value="house">House</SelectItem>
-                        <SelectItem value="apartment">Apartment</SelectItem>
-                        <SelectItem value="villa">Villa</SelectItem>
+                        <SelectItem value="single_family">Single-Family Homes</SelectItem>
+                        <SelectItem value="apartment">Apartments/Flats</SelectItem>
+                        <SelectItem value="townhouse">Townhouses/Row Houses</SelectItem>
+                        <SelectItem value="condominium">Condominiums</SelectItem>
+                        <SelectItem value="villa">Villas</SelectItem>
+                        <SelectItem value="duplex">Duplex/Multi-family Units</SelectItem>
+                        <SelectItem value="servant_quarters">Servant Quarters/Studio Housing</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

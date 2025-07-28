@@ -73,7 +73,13 @@ export default function PostJobPage() {
         
         setServices(servicesData);
         setLocations(locationsData);
-        setPayFrequencies(payFrequenciesData);
+        setPayFrequencies(
+          payFrequenciesData.map(f => ({
+            id: f.id,
+            label: f.label,
+            description: f.description ?? "",
+          }))
+        );
       } catch (error) {
         console.error('Error loading data:', error);
         toast({

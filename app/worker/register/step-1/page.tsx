@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -35,6 +34,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { useFormContext } from "../form-provider";
+import { OAuthButtons } from "@/components/oauth-buttons";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -103,6 +103,20 @@ export default function WorkerRegisterStep1Page() {
           <CardDescription>Step 1: Basic Information</CardDescription>
         </CardHeader>
         <CardContent>
+          {/* OAuth registration options */}
+          <div className="mb-6">
+            <p className="text-center text-sm mb-2">Register with:</p>
+            <div className="flex justify-center gap-4">
+              <OAuthButtons
+                onSuccess={(uid, email) => {
+                  setFormData((prev: any) => ({ ...prev, email }));
+                  router.push("/worker/register/step-2");
+                }}
+                userType="worker"
+              />
+            </div>
+            <div className="text-center text-xs text-muted-foreground mt-2">or fill out the form below</div>
+          </div>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="flex justify-center mb-4">

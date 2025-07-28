@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -26,9 +25,12 @@ type ScheduledJob = {
 
 const JobCard = ({ job }: { job: ScheduledJob }) => (
     <Card>
-        <CardHeader className="pb-4">
-            <CardTitle className="text-base">{job.jobTitle}</CardTitle>
-            <p className="text-sm text-muted-foreground">{job.householdName}</p>
+        <CardHeader className="pb-4 flex flex-row items-center justify-between">
+            <div>
+                <CardTitle className="text-base">{job.jobTitle}</CardTitle>
+                <p className="text-sm text-muted-foreground">{job.householdName}</p>
+            </div>
+            <Badge variant={job.status === 'completed' ? 'secondary' : job.status === 'cancelled' ? 'destructive' : 'default'}>{job.status.charAt(0).toUpperCase() + job.status.slice(1)}</Badge>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
             <div className="flex items-center gap-2 text-muted-foreground">
@@ -38,6 +40,11 @@ const JobCard = ({ job }: { job: ScheduledJob }) => (
             <div className="flex items-center gap-2 text-muted-foreground">
                 <Clock className="h-4 w-4" />
                 <span>{job.jobTime}</span>
+            </div>
+            <div className="flex gap-2 mt-2">
+                <Button size="sm" variant="outline" onClick={() => window.dispatchEvent(new CustomEvent('showJobDetails', { detail: job }))}>Details</Button>
+                {job.status === 'assigned' && <Button size="sm" variant="ghost" onClick={() => window.dispatchEvent(new CustomEvent('rescheduleJob', { detail: job }))}>Reschedule</Button>}
+                {job.status === 'assigned' && <Button size="sm" variant="destructive" onClick={() => window.dispatchEvent(new CustomEvent('cancelJob', { detail: job }))}>Cancel</Button>}
             </div>
         </CardContent>
     </Card>
@@ -62,6 +69,23 @@ export default function WorkerSchedulePage() {
     const [date, setDate] = React.useState<Date | undefined>(new Date());
     const [schedule, setSchedule] = React.useState<ScheduledJob[]>([]);
     const [loading, setLoading] = React.useState(true);
+    const [selectedJob, setSelectedJob] = React.useState<ScheduledJob | null>(null);
+    const [showReschedule, setShowReschedule] = React.useState(false);
+    const [showCancel, setShowCancel] = React.useState(false);
+
+    React.useEffect(() => {
+        function handleShowDetails(e: any) { setSelectedJob(e.detail); }
+        function handleReschedule(e: any) { setSelectedJob(e.detail); setShowReschedule(true); }
+        function handleCancel(e: any) { setSelectedJob(e.detail); setShowCancel(true); }
+        window.addEventListener('showJobDetails', handleShowDetails);
+        window.addEventListener('rescheduleJob', handleReschedule);
+        window.addEventListener('cancelJob', handleCancel);
+        return () => {
+            window.removeEventListener('showJobDetails', handleShowDetails);
+            window.removeEventListener('rescheduleJob', handleReschedule);
+            window.removeEventListener('cancelJob', handleCancel);
+        };
+    }, []);
 
     React.useEffect(() => {
         const fetchSchedule = async () => {
@@ -72,7 +96,6 @@ export default function WorkerSchedulePage() {
                     const jobsQuery = query(
                         collection(db, 'jobs'),
                         where('workerId', '==', user.uid),
-                        where('status', 'in', ['assigned', 'active']),
                         orderBy('createdAt', 'desc')
                     );
                     
@@ -89,7 +112,6 @@ export default function WorkerSchedulePage() {
                             jobTime: data.startTime || '9:00 AM'
                         };
                     });
-                    
                     setSchedule(scheduledJobs);
                 } catch (error) {
                     toast({ 
@@ -102,36 +124,30 @@ export default function WorkerSchedulePage() {
                 }
             }
         };
-
         if (!authLoading) {
             fetchSchedule();
         }
     }, [user, authLoading, toast]);
 
-    const jobsForSelectedDate = React.useMemo(() => {
+    const jobsForSelectedDate: ScheduledJob[] = React.useMemo(() => {
         if (!date) return [];
-        return schedule.filter(job => isSameDay(job.jobDate, date));
+        return Array.isArray(schedule) ? schedule.filter((job: ScheduledJob) => isSameDay(job.jobDate, date)) : [];
     }, [schedule, date]);
 
-    const scheduledDays = React.useMemo(() => schedule.map(job => job.jobDate), [schedule]);
-
     return (
-        <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">My Schedule</h1>
-                <p className="text-muted-foreground">View and manage your upcoming jobs.</p>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2">
+        <div className="p-4">
+            <div className="max-w-3xl mx-auto">
+                <div className="space-y-4">
                     <Card>
-                        <CardContent className="p-0">
+                        <CardHeader>
+                            <CardTitle>Schedule</CardTitle>
+                        </CardHeader>
+                        <CardContent>
                             <Calendar
                                 mode="single"
                                 selected={date}
                                 onSelect={setDate}
-                                className="w-full"
-                                modifiers={{ scheduled: scheduledDays }}
+                                className="border-2 border-dashed rounded-lg"
                                 modifiersStyles={{
                                     scheduled: {
                                         border: "2px solid hsl(var(--primary))",
@@ -155,6 +171,25 @@ export default function WorkerSchedulePage() {
                             ) : (
                                 <p className="text-center text-muted-foreground py-8">No jobs scheduled for this day.</p>
                             )}
+                            {selectedJob && <JobDetailsModal job={selectedJob} onClose={() => setSelectedJob(null)} />}
+                            {showReschedule && selectedJob && (
+                                <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
+                                    <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+                                        <h2 className="text-lg font-bold mb-2">Reschedule Job</h2>
+                                        <p className="mb-2">Feature coming soon.</p>
+                                        <Button onClick={() => setShowReschedule(false)} className="mt-2">Close</Button>
+                                    </div>
+                                </div>
+                            )}
+                            {showCancel && selectedJob && (
+                                <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
+                                    <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+                                        <h2 className="text-lg font-bold mb-2">Cancel Job</h2>
+                                        <p className="mb-2">Feature coming soon.</p>
+                                        <Button onClick={() => setShowCancel(false)} className="mt-2">Close</Button>
+                                    </div>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </div>
@@ -165,3 +200,20 @@ export default function WorkerSchedulePage() {
 
 // Force dynamic rendering to avoid SSG issues
 export const dynamic = 'force-dynamic';
+// Job details modal implementation
+function JobDetailsModal({ job, onClose }: { job: ScheduledJob, onClose: () => void }) {
+    if (!job) return null;
+    return (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
+            <div className="bg-white rounded-lg shadow-lg p-6 max-w-lg w-full">
+                <h2 className="text-xl font-bold mb-2">{job.jobTitle}</h2>
+                <p className="text-muted-foreground mb-2">{job.householdName}</p>
+                <div className="mb-2">Location: <span className="font-semibold">{job.householdLocation}</span></div>
+                <div className="mb-2">Date: <span className="font-semibold">{job.jobDate.toLocaleDateString()}</span></div>
+                <div className="mb-2">Time: <span className="font-semibold">{job.jobTime}</span></div>
+                <div className="mb-2">Status: <Badge variant={job.status === 'completed' ? 'secondary' : job.status === 'cancelled' ? 'destructive' : 'default'}>{job.status.charAt(0).toUpperCase() + job.status.slice(1)}</Badge></div>
+                <Button onClick={onClose} className="mt-4">Close</Button>
+            </div>
+        </div>
+    );
+}

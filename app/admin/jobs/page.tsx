@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -11,7 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MoreHorizontal, Search, FileDown, Trash2, Eye, Sparkles } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Input } from "@/components/ui/input"
-import { getJobs, deleteJob, type Job } from "./actions"
+import { getJobs, deleteJob, type Job, approveJob } from "./actions"
 import { useToast } from "@/hooks/use-toast"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { serviceOptions } from "@/lib/services"
@@ -74,6 +73,16 @@ export default function AdminJobsPage() {
         const result = await deleteJob(jobId);
         if (result.success) {
             toast({ title: "Job Deleted", description: `Job "${jobTitle}" has been deleted.` });
+            fetchJobs();
+        } else {
+            toast({ variant: "destructive", title: "Error", description: result.error });
+        }
+    };
+
+    const handleApprove = async (jobId: string, jobTitle: string) => {
+        const result = await approveJob(jobId);
+        if (result.success) {
+            toast({ title: "Job Approved", description: `Job \"${jobTitle}\" is now visible to workers.` });
             fetchJobs();
         } else {
             toast({ variant: "destructive", title: "Error", description: result.error });
@@ -153,6 +162,11 @@ export default function AdminJobsPage() {
                                                         </DropdownMenuTrigger>
                                                         <DropdownMenuContent align="end">
                                                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                            {job.status === 'pending' && (
+                                                                <DropdownMenuItem onClick={() => handleApprove(job.id, job.jobTitle)}>
+                                                                    <Sparkles className="mr-2 h-4 w-4" /> Approve Job
+                                                                </DropdownMenuItem>
+                                                            )}
                                                             {job.status === 'open' && (
                                                                 <DropdownMenuItem onClick={() => handleMatchClick(job)}>
                                                                     <Sparkles className="mr-2 h-4 w-4" /> AI Smart Match

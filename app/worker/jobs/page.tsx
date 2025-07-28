@@ -67,22 +67,42 @@ const JobCardSkeleton = () => (
 
 export default function WorkerJobsPage() {
     const [jobs, setJobs] = React.useState<Job[]>([]);
+    const [filteredJobs, setFilteredJobs] = React.useState<Job[]>([]);
     const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState<string | null>(null);
+    const [selectedJob, setSelectedJob] = React.useState<Job | null>(null);
+    const [filter, setFilter] = React.useState({ service: 'all', type: 'all', search: '' });
     const { toast } = useToast();
     const { user } = useAuth();
-    
+
+    // Filtering logic
+    React.useEffect(() => {
+        let result = jobs;
+        if (filter.service !== 'all') {
+            result = result.filter(j => j.serviceType === filter.service);
+        }
+        if (filter.type !== 'all') {
+            result = result.filter(j => j.payFrequency === filter.type);
+        }
+        if (filter.search) {
+            result = result.filter(j => j.jobTitle.toLowerCase().includes(filter.search.toLowerCase()));
+        }
+        setFilteredJobs(result);
+    }, [jobs, filter]);
+
     const fetchJobs = React.useCallback(async () => {
         setLoading(true);
         try {
             const fetchedJobs = await getOpenJobs();
             setJobs(fetchedJobs);
         } catch (error) {
+            setError("Could not fetch jobs.");
             toast({ variant: "destructive", title: "Error", description: "Could not fetch jobs." });
         } finally {
             setLoading(false);
         }
     }, [toast]);
-    
+
     React.useEffect(() => {
         fetchJobs();
     }, [fetchJobs]);
@@ -92,75 +112,70 @@ export default function WorkerJobsPage() {
             toast({ variant: "destructive", title: "Not logged in", description: "You must be logged in to apply." });
             return;
         }
-        
         toast({ title: "Applying for job..." });
-
         const result = await applyForJob(jobId, user.uid);
-
         if (result.success) {
             toast({ title: "Success!", description: "Your application has been submitted." });
-            fetchJobs(); // Refresh the list of jobs
+            fetchJobs();
         } else {
             toast({ variant: "destructive", title: "Error", description: result.error });
         }
     };
 
-    return (
-        <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">Find Job Opportunities</h1>
-                <p className="text-muted-foreground">Browse and apply for jobs that match your skills.</p>
+    // Job details modal
+    function JobDetailsModal({ job, onClose }: { job: Job, onClose: () => void }) {
+        if (!job) return null;
+        return (
+            <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
+                <div className="bg-white rounded-lg shadow-lg p-6 max-w-lg w-full">
+                    <h2 className="text-xl font-bold mb-2">{job.jobTitle}</h2>
+                    <p className="text-muted-foreground mb-2">{job.householdName}</p>
+                    <div className="mb-2">Service: <Badge>{serviceOptions.find(s => s.id === job.serviceType)?.label || job.serviceType}</Badge></div>
+                    <div className="mb-2">Type: <Badge>{job.payFrequency.replace('_', '-')}</Badge></div>
+                    <div className="mb-2">Salary: <span className="font-semibold">{job.salary}</span></div>
+                    <div className="mb-2">Description: <span>No description provided.</span></div>
+                    <Button onClick={onClose} className="mt-4">Close</Button>
+                </div>
             </div>
+        );
+    }
 
-            <Card>
-                <CardContent className="p-4 md:p-6 space-y-6">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        <Input placeholder="Search by title, location, or skill..." className="pl-10 text-base" />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                            <Label>Service Type</Label>
-                            <Select>
-                                <SelectTrigger><SelectValue placeholder="All Services" /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Services</SelectItem>
-                                    {serviceOptions.map(service => (
-                                        <SelectItem key={service.id} value={service.id}>{service.label}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Job Type</Label>
-                            <Select>
-                                <SelectTrigger><SelectValue placeholder="All Types" /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Types</SelectItem>
-                                    <SelectItem value="full-time">Full-time</SelectItem>
-                                    <SelectItem value="part-time">Part-time</SelectItem>
-                                    <SelectItem value="one-time">One-time</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <Button className="self-end w-full md:w-auto">Apply Filters</Button>
-                    </div>
-                </CardContent>
-            </Card>
-
+    return (
+        <div className="space-y-8">
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                <Input placeholder="Search jobs..." value={filter.search} onChange={e => setFilter(f => ({ ...f, search: e.target.value }))} className="w-full md:w-1/3" />
+                <Select value={filter.service} onValueChange={v => setFilter(f => ({ ...f, service: v }))}>
+                    <SelectTrigger><SelectValue placeholder="All Services" /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Services</SelectItem>
+                        {serviceOptions.map(service => (
+                            <SelectItem key={service.id} value={service.id}>{service.label}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                <Select value={filter.type} onValueChange={v => setFilter(f => ({ ...f, type: v }))}>
+                    <SelectTrigger><SelectValue placeholder="All Types" /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Types</SelectItem>
+                        <SelectItem value="full-time">Full-time</SelectItem>
+                        <SelectItem value="part-time">Part-time</SelectItem>
+                        <SelectItem value="one-time">One-time</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            {error && <div className="text-destructive">{error}</div>}
             {loading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {Array.from({ length: 6 }).map((_, i) => <JobCardSkeleton key={i} />)}
                 </div>
-            ) : jobs.length > 0 ? (
-                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {jobs.map(job => <JobCard key={job.id} job={job} onApply={handleApply} />)}
+            ) : filteredJobs.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredJobs.map(job => <JobCard key={job.id} job={job} onApply={handleApply} />)}
                 </div>
             ) : (
-                <div className="text-center py-16 text-muted-foreground">
-                    <p>No open jobs found at the moment. Please check back later.</p>
-                </div>
+                <div className="text-center py-16 text-muted-foreground">No jobs found. Try adjusting your filters.</div>
             )}
+            {selectedJob && <JobDetailsModal job={selectedJob} onClose={() => setSelectedJob(null)} />}
         </div>
-    )
+    );
 }

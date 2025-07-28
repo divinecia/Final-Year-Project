@@ -22,10 +22,17 @@ type TrainingProgram = {
 
 const TrainingCard = ({ training }: { training: TrainingProgram }) => {
     const [status, setStatus] = useState<'start' | 'inprogress' | 'completed'>('start');
+    const [progress, setProgress] = useState(0);
 
     const handleButtonClick = () => {
-        if (status === 'start') setStatus('inprogress');
-        if (status === 'inprogress') setStatus('completed');
+        if (status === 'start') {
+            setStatus('inprogress');
+            setProgress(33);
+        }
+        else if (status === 'inprogress') {
+            setStatus('completed');
+            setProgress(100);
+        }
     }
 
     const getButtonText = () => {
@@ -48,6 +55,10 @@ const TrainingCard = ({ training }: { training: TrainingProgram }) => {
                     <Clock className="h-4 w-4" />
                     <span>Duration: {training.duration}</span>
                 </div>
+                <div className="w-full bg-gray-100 rounded-full h-2 mt-2">
+                    <div className="bg-primary h-2 rounded-full" style={{ width: `${progress}%` }}></div>
+                </div>
+                {status === 'completed' && <div className="text-green-600 text-xs mt-2">Congratulations! You completed this course.</div>}
             </CardContent>
             <CardFooter>
                 <Button className="w-full" onClick={handleButtonClick} disabled={status === 'completed'}>

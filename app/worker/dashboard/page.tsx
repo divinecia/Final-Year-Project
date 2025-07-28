@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Briefcase, CalendarCheck2, Star, Wallet, ArrowRight } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAuth } from "@/hooks/use-auth"
@@ -18,10 +19,61 @@ import Link from "next/link";
 export default function WorkerDashboardPage() {
     const { user, loading: authLoading } = useAuth();
     const { toast } = useToast();
+
     const [stats, setStats] = React.useState<WorkerDashboardStats | null>(null);
     const [jobs, setJobs] = React.useState<Job[]>([]);
     const [loading, setLoading] = React.useState(true);
+    const [notifications, setNotifications] = React.useState<any[]>([]);
+    const [notificationsLoading, setNotificationsLoading] = React.useState(true);
+    const [messagesPreview, setMessagesPreview] = React.useState<any[]>([]);
+    const [reviewsSummary, setReviewsSummary] = React.useState<any>(null);
+    const [reviewsLoading, setReviewsLoading] = React.useState(true);
 
+    // Rwanda insurance companies (sample)
+    const insuranceCompanies = [
+        { id: 'sonarwa', name: 'SONARWA' },
+        { id: 'radiant', name: 'RADIANT' },
+        { id: 'sanlam', name: 'SANLAM' },
+        { id: 'prime', name: 'PRIME Insurance' },
+        { id: 'corar', name: 'CORAR' },
+    ];
+    // Default insurance selection (could be made dynamic in settings)
+    const selectedInsurance = insuranceCompanies[0];
+    // EjoHeza deduction rate (2025): 5%
+    const EJOHEZA_RATE = 0.05;
+    // Insurance fee (example): 2%
+    const INSURANCE_RATE = 0.02;
+    // VAT (Rwanda): 18%
+    const VAT_RATE = 0.18;
+    // Helper to calculate breakdown for a salary
+    function getEarningsBreakdown(salary: number) {
+        const vat = salary * VAT_RATE;
+        const insurance = salary * INSURANCE_RATE;
+        const ejoheza = salary * EJOHEZA_RATE;
+        const net = salary - vat - insurance - ejoheza;
+        return {
+            gross: salary,
+            vat,
+            insurance,
+            ejoheza,
+            net,
+        };
+    }
+    // Helper to render breakdown
+    function EarningsBreakdown({ salary }: { salary: number }) {
+        const breakdown = getEarningsBreakdown(salary);
+        return (
+            <div className="text-xs text-muted-foreground mt-2 space-y-1">
+                <div><span className="font-semibold">Gross:</span> {formatCurrency(breakdown.gross)}</div>
+                <div><span className="font-semibold">VAT (18%):</span> {formatCurrency(breakdown.vat)}</div>
+                <div><span className="font-semibold">Insurance (2%):</span> {formatCurrency(breakdown.insurance)} <span className="ml-1">({selectedInsurance.name})</span></div>
+                <div><span className="font-semibold">EjoHeza (5%):</span> {formatCurrency(breakdown.ejoheza)}</div>
+                <div><span className="font-semibold">Net:</span> <span className="text-primary font-bold">{formatCurrency(breakdown.net)}</span></div>
+            </div>
+        );
+    }
+
+    // Fetch dashboard stats and jobs
     React.useEffect(() => {
         const fetchData = async () => {
             if (user) {
@@ -44,11 +96,70 @@ export default function WorkerDashboardPage() {
                 }
             }
         };
-
         if (!authLoading) {
             fetchData();
         }
     }, [user, authLoading, toast]);
+
+    // Fetch notifications preview
+    React.useEffect(() => {
+        const fetchNotifications = async () => {
+            if (user) {
+                setNotificationsLoading(true);
+                try {
+                    const { collection, query, where, orderBy, getDocs } = await import("firebase/firestore");
+                    const { db } = await import("@/lib/firebase");
+                    const q = query(
+                        collection(db, "notifications"),
+                        where("userId", "==", user.uid),
+                        orderBy("createdAt", "desc")
+                    );
+                    const querySnapshot = await getDocs(q);
+                    setNotifications(querySnapshot.docs.slice(0, 3).map(doc => ({ id: doc.id, ...doc.data() })));
+                } catch (error) {
+                    setNotifications([]);
+                } finally {
+                    setNotificationsLoading(false);
+                }
+            }
+        };
+        if (user) fetchNotifications();
+    }, [user]);
+
+    // Fetch recent messages preview
+    React.useEffect(() => {
+        const fetchMessagesPreview = async () => {
+            if (user) {
+                try {
+                    const { getConversations } = await import("../../household/messaging/actions");
+                    const rooms = await getConversations(user.uid, "worker");
+                    setMessagesPreview(rooms.slice(0, 2));
+                } catch (error) {
+                    setMessagesPreview([]);
+                }
+            }
+        };
+        if (user) fetchMessagesPreview();
+    }, [user]);
+
+    // Fetch reviews summary
+    React.useEffect(() => {
+        const fetchReviews = async () => {
+            if (user) {
+                setReviewsLoading(true);
+                try {
+                    const { getWorkerReviews } = await import("../reviews/actions");
+                    const summary = await getWorkerReviews(user.uid);
+                    setReviewsSummary(summary);
+                } catch (error) {
+                    setReviewsSummary(null);
+                } finally {
+                    setReviewsLoading(false);
+                }
+            }
+        };
+        if (user) fetchReviews();
+    }, [user]);
     
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'RWF', minimumFractionDigits: 0 }).format(amount).replace('RWF', 'RWF ');
@@ -59,25 +170,84 @@ export default function WorkerDashboardPage() {
     };
 
 
+  // ...existing code...
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Welcome back!</CardTitle>
-          <CardDescription>Complete your profile to get more job offers.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4">
-            <Progress value={75} className="w-full md:w-1/2" />
-            <span className="text-sm font-medium">75% Complete</span>
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button asChild><Link href="/worker/settings">Complete Profile <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
-        </CardFooter>
-      </Card>
+    <div className="space-y-8">
+      {/* Top row: Profile, Notifications, Messaging */}
+      <div className="grid gap-4 md:grid-cols-3">
+        {/* Profile completion */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Welcome back!</CardTitle>
+            <CardDescription>Complete your profile to get more job offers.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-4">
+              <Progress value={75} className="w-full md:w-1/2" />
+              <span className="text-sm font-medium">75% Complete</span>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button asChild><Link href="/worker/settings">Complete Profile <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
+          </CardFooter>
+        </Card>
+        {/* Notifications preview */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Notifications</CardTitle>
+            <CardDescription>Recent alerts and updates</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {notificationsLoading ? (
+                <Skeleton className="h-6 w-32 mb-2" />
+              ) : notifications.length > 0 ? (
+                notifications.map((n) => (
+                  <div key={n.id} className="flex items-center gap-2">
+                    <Badge className="bg-primary text-white">{n.title?.includes("job") ? "Job" : n.title?.includes("payment") ? "Payment" : n.title?.includes("message") ? "Message" : "Other"}</Badge>
+                    <span className="text-sm">{n.title || "Notification"}</span>
+                  </div>
+                ))
+              ) : (
+                <span className="text-sm text-muted-foreground">No notifications yet.</span>
+              )}
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button asChild variant="outline" className="w-full"><Link href="/worker/notifications">View All</Link></Button>
+          </CardFooter>
+        </Card>
+        {/* Messaging preview */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Messages</CardTitle>
+            <CardDescription>Recent conversations</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {messagesPreview.length === 0 ? (
+                <span className="text-sm text-muted-foreground">No recent messages.</span>
+              ) : (
+                messagesPreview.map((room) => (
+                  <div key={room.id} className="flex items-center gap-2">
+                    <Avatar className="h-6 w-6"><AvatarFallback>{room.jobTitle?.charAt(0) || "H"}</AvatarFallback></Avatar>
+                    <span className="text-sm font-medium">{room.lastMessage ? room.lastMessage : room.jobTitle || "Conversation"}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button asChild variant="outline" className="w-full"><Link href="/worker/messaging">Go to Messaging</Link></Button>
+          </CardFooter>
+        </Card>
+      </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* Stats row */}
+      <div className="grid gap-4 md:grid-cols-4">
+        {/* ...existing stats cards... */}
+        {/* Open Jobs, Upcoming Jobs, Rating, Earnings */}
+        {/* ...existing code... */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Open Jobs</CardTitle>
@@ -115,11 +285,15 @@ export default function WorkerDashboardPage() {
           </CardHeader>
           <CardContent>
             {loading ? <Skeleton className="h-8 w-32" /> : <div className="text-2xl font-bold">{formatCurrency(stats?.monthEarnings ?? 0)}</div>}
-            <p className="text-xs text-muted-foreground">Total earnings this month</p>
+            <p className="text-xs text-muted-foreground">Total net earnings this month after VAT (18%), insurance (2%), and EjoHeza (5%) deductions.</p>
+            {stats?.monthEarnings && (
+                <EarningsBreakdown salary={stats.monthEarnings} />
+            )}
           </CardContent>
         </Card>
       </div>
-      
+
+      {/* New jobs section ...existing code... */}
       <div>
         <Card>
             <CardHeader>
@@ -171,10 +345,12 @@ export default function WorkerDashboardPage() {
                                         <Badge variant="secondary">{getServiceName(job.serviceType)}</Badge>
                                         <Badge variant="outline" className="capitalize">{job.payFrequency.replace('_', '-')}</Badge>
                                     </div>
+                                   <EarningsBreakdown salary={job.salary} />
                                 </div>
                                 <div className="text-left sm:text-right flex-shrink-0">
-                                    <p className="text-lg font-bold">{formatCurrency(job.salary)}</p>
+                                    <p className="text-lg font-bold">{formatCurrency(getEarningsBreakdown(job.salary).net)}</p>
                                     <Button size="sm" asChild><Link href="/worker/jobs">View & Apply</Link></Button>
+                                    <div className="mt-2 text-xs text-muted-foreground">Insurance: <span className="font-semibold">{selectedInsurance.name}</span> | EjoHeza: <span className="font-semibold">5%</span></div>
                                 </div>
                             </div>
                         ))
@@ -188,6 +364,36 @@ export default function WorkerDashboardPage() {
                     <Link href="/worker/jobs">See All Jobs</Link>
                 </Button>
             </CardFooter>
+        </Card>
+      </div>
+
+      {/* Reviews summary */}
+      <div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Latest Reviews</CardTitle>
+            <CardDescription>Your recent feedback from households</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {reviewsLoading ? (
+                <Skeleton className="h-6 w-32 mb-2" />
+              ) : reviewsSummary && reviewsSummary.reviews.length > 0 ? (
+                reviewsSummary.reviews.slice(0, 2).map((review: any) => (
+                  <div key={review.id} className="flex items-center gap-2">
+                    <Star className="h-5 w-5 text-yellow-400" />
+                    <span className="font-semibold">{review.rating.toFixed(1)}</span>
+                    <span className="text-xs text-muted-foreground">“{review.comment}”</span>
+                  </div>
+                ))
+              ) : (
+                <span className="text-sm text-muted-foreground">No reviews yet.</span>
+              )}
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button asChild variant="outline" className="w-full"><Link href="/worker/reviews">See All Reviews</Link></Button>
+          </CardFooter>
         </Card>
       </div>
     </div>

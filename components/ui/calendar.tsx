@@ -6,7 +6,7 @@ import { cn } from "../../lib/utils"
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>
 
-const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
+export const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
   (
     {
       className,

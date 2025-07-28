@@ -43,56 +43,56 @@ export async function createJobPost(householdId: string, data: JobPostFormData) 
       serviceType: data.serviceType,
       jobDescription: data.jobDescription,
       schedule: data.schedule,
-      
+
       // Location information
       location: {
         district: data.district,
         sector: data.sector,
       },
-      
+
       // Compensation details
       compensation: {
         salary: data.salary,
         payFrequency: data.payFrequency,
         benefits: data.benefits,
       },
-      
+
       // Household information
       householdId,
       householdName: householdData.personalInfo?.fullName || householdData.fullName,
       householdLocation: `${data.sector}, ${data.district}`,
-      
+
       // Status and metadata
-      status: 'open' as const,
+      status: 'pending' as const, // jobs must be approved by admin
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
-      
+
       // Worker assignment (initially null)
       workerId: null,
       workerName: null,
-      
+
       // Application tracking
       applications: [],
-      
+
       // Reviews (initially empty)
       reviews: [],
     };
 
     const jobDoc = await addDoc(collection(db, 'jobs'), jobData);
-    
-    // Create notification for household about successful job posting
+
+    // Create notification for household about successful job posting (pending approval)
     await createNotification(
       householdId,
       'household',
-      'Job Posted Successfully',
-      `Your job "${data.jobTitle}" has been posted and is now visible to workers.`,
-      'success',
+      'Job Submitted for Approval',
+      `Your job "${data.jobTitle}" has been submitted and will be visible to workers after admin approval.`,
+      'info',
       jobDoc.id
     );
-    
+
     revalidatePath('/household/post-job');
     revalidatePath('/admin/jobs');
-    
+
     return { success: true, jobId: jobDoc.id };
   } catch (error) {
     console.error("Error creating job post: ", error);
