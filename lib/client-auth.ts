@@ -183,6 +183,17 @@ export async function signInWithGoogle(): Promise<AuthResult> {
     }
   } catch (error) {
     console.error('Google sign-in error:', error);
+    
+    // Handle blocked domain errors specifically
+    if (error instanceof FirebaseError && 
+        error.code.includes('requests-from-referer') && 
+        error.code.includes('are-blocked')) {
+      return { 
+        success: false, 
+        error: 'Domain not authorized. Please add your Replit domain to Firebase Console under Authentication > Settings > Authorized domains.'
+      };
+    }
+    
     const message = error instanceof FirebaseError ? 
       getAuthErrorMessage(error, 'google') : 
       'Google sign-in failed';
@@ -209,6 +220,17 @@ export async function signInWithGitHub(): Promise<AuthResult> {
     }
   } catch (error) {
     console.error('GitHub sign-in error:', error);
+    
+    // Handle blocked domain errors specifically
+    if (error instanceof FirebaseError && 
+        error.code.includes('requests-from-referer') && 
+        error.code.includes('are-blocked')) {
+      return { 
+        success: false, 
+        error: 'Domain not authorized. Please add your Replit domain to Firebase Console under Authentication > Settings > Authorized domains.'
+      };
+    }
+    
     const message = error instanceof FirebaseError ? 
       getAuthErrorMessage(error, 'github') : 
       'GitHub sign-in failed';
