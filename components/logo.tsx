@@ -22,7 +22,7 @@ export function Logo({
       alt={alt}
       width={size}
       height={size}
-      className={clsx('object-contain', className)}
+      className={clsx('object-contain rounded-[40%]', className)}
       priority={priority}
       draggable={false}
     />

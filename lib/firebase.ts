@@ -40,6 +40,9 @@ if (typeof window !== "undefined") {
   if (currentDomain.includes('replit.dev') || currentDomain.includes('repl.co')) {
     // Handle Replit domain configuration
     console.log('Running on Replit domain:', currentDomain);
+    
+    // Configure auth settings for Replit domains
+    auth.settings.appVerificationDisabledForTesting = true;
   }
 }
 

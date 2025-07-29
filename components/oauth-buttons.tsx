@@ -82,7 +82,7 @@ export function OAuthButtons({ onSuccess, onError, disabled = false }: OAuthButt
           </span>
         </div>
       </div>
-      
+
       <div className="grid grid-cols-2 gap-3">
         <Button
           type="button"
@@ -111,7 +111,7 @@ export function OAuthButtons({ onSuccess, onError, disabled = false }: OAuthButt
           </svg>
           Google
         </Button>
-        
+
         <Button
           type="button"
           variant="outline"
