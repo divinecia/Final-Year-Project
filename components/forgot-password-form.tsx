@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { getAuth, sendPasswordResetEmail } from "firebase/auth";
 import { app } from "@/lib/firebase";
 

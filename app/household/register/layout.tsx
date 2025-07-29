@@ -1,3 +1,4 @@
+import React from 'react';
 import { FormProvider } from "./form-provider";
 
 export default function RegisterLayout({

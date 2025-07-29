@@ -36,7 +36,6 @@ import { signOut } from "@/lib/auth"
 import { useToast } from "@/hooks/use-toast"
 
 function AdminSidebar() {
-  const { open, setOpen, openMobile, setOpenMobile } = useSidebar()
   const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();

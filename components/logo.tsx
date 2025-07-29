@@ -1,3 +1,4 @@
+import React from 'react';
 import Image from 'next/image';
 import icon from '@/components/icons/icon.png';
 import clsx from 'clsx';

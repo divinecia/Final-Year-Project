@@ -32,6 +32,9 @@
         "hooks/*"
       ]
     },
+    "types": [
+      "aws-lambda"
+    ],
     "incremental": true,
     "tsBuildInfoFile": "./.next/cache/tsbuildinfo",
     "plugins": [
@@ -41,10 +44,10 @@
     ]
   },
   "include": [
-    "next-env.d.ts",
-    ".next/types/**/*.ts",
     "**/*.ts",
-    "**/*.tsx"
+    "**/*.tsx",
+    "next-env.d.ts",
+    ".next/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"
