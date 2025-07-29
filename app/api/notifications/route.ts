@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
       success: true,
       data: notifications,
       total: notifications.length,
-      unreadCount: notifications.filter((n: { read?: boolean }) => !n.read).length,
+      unreadCount: notifications.filter((n: any) => !n.read).length,
       message: 'Notifications retrieved successfully'
     });
     

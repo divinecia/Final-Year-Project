@@ -86,15 +86,23 @@ export function PackageForm({ open, onOpenChange, onFormSubmit, initialData }: P
     if (result.success) {
         toast({
             title: "Success!",
-            description: `Package "${values.name}" has been ${isEditing ? 'updated' : 'created'}.`,
+            description: `Package \"${values.name}\" has been ${isEditing ? 'updated' : 'created'}.`,
         });
         onFormSubmit();
         onOpenChange(false);
     } else {
+        let errorMsg = result.error || `Could not ${isEditing ? 'update' : 'create'} the package.`;
+        if (typeof errorMsg !== 'string') {
+            if (Array.isArray(errorMsg)) {
+                errorMsg = errorMsg.join(', ');
+            } else {
+                errorMsg = JSON.stringify(errorMsg);
+            }
+        }
         toast({
             variant: "destructive",
             title: "Error",
-            description: result.error || `Could not ${isEditing ? 'update' : 'create'} the package.`
+            description: errorMsg
         })
     }
   }
@@ -191,7 +199,7 @@ export function PackageForm({ open, onOpenChange, onFormSubmit, initialData }: P
                         <FormControl>
                           <Checkbox
                             checked={field.value?.includes(service.id)}
-                            onCheckedChange={(checked) => {
+                            onCheckedChange={(checked: boolean) => {
                               if (checked) {
                                 field.onChange([...(field.value || []), service.id]);
                               } else {

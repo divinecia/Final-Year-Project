@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, query, where, orderBy, getDocs, doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs, doc, setDoc, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 
 export interface Payment {
@@ -243,8 +243,8 @@ export async function processPayment(
         // Step 2: Process based on payment method
         if (paymentData.paymentMethod === 'card') {
             // Implement card payment processing
-            // const cardPaymentData = {
-            //     amount: paymentData.amount,
+            const cardPaymentData = {
+                amount: paymentData.amount,
                 currency: 'RWF',
                 description: `Payment for ${paymentData.serviceType} service`,
                 metadata: {

@@ -1,19 +1,21 @@
 {
   "$schema": "http://json.schemastore.org/tsconfig.json",
   "compilerOptions": {
-    "target": "ES2022", // Use a more recent target for better features/support
+    "target": "esnext",
     "lib": [
       "dom",
       "dom.iterable",
       "esnext"
     ],
-    "allowJs": false, // Disallow JS for stricter type safety (set to true if you need JS support)
+    "allowJs": false,
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
     "module": "esnext",
-    "moduleResolution": "bundler",
+    "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
@@ -30,11 +32,18 @@
       ],
       "@/hooks/*": [
         "hooks/*"
+      ],
+      "@/config/*": [
+        "config/*"
+      ],
+      "@/app/*": [
+        "app/*"
       ]
     },
     "types": [
-      "aws-lambda",
-      "jest"
+      "jest",
+      "node",
+      "aws-lambda"
     ],
     "incremental": true,
     "tsBuildInfoFile": "./.next/cache/tsbuildinfo",
@@ -45,10 +54,10 @@
     ]
   },
   "include": [
-    "next-pwa.d.ts",
     "**/*.ts",
     "**/*.tsx",
     "next-env.d.ts",
+    "next-pwa.d.ts",
     ".next/types/**/*.ts"
   ],
   "exclude": [

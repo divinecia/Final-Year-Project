@@ -58,7 +58,7 @@ export default function ForgotPasswordPage() {
         }
         
         const appVerifier = (window as unknown as { recaptchaVerifier: unknown }).recaptchaVerifier;
-        const verificationId = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
+        const verificationId = await signInWithPhoneNumber(auth, formattedPhone, appVerifier as import("firebase/auth").ApplicationVerifier);
       
         toast({
             title: "Code Sent!",

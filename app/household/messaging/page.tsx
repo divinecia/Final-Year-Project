@@ -14,7 +14,7 @@ import { db } from "@/lib/firebase"
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 
-export default function HouseholdMessagingPage() {
+export default function MessagingPage() {
     const { user, loading: authLoading } = useAuth();
     const { toast } = useToast();
     const [chatRooms, setChatRooms] = React.useState<Conversation[]>([]);
@@ -22,7 +22,8 @@ export default function HouseholdMessagingPage() {
     const [messages, setMessages] = React.useState<Message[]>([]);
     const [newMessage, setNewMessage] = React.useState("");
     const [loading, setLoading] = React.useState(true);
-    const [otherUserProfile, setOtherUserProfile] = React.useState<Record<string, unknown> | null>(null);
+    type UserProfile = { profilePicture?: string; fullName?: string; phone?: string; role?: string };
+    const [otherUserProfile, setOtherUserProfile] = React.useState<UserProfile | null>(null);
     const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
     // Fetch chat rooms on mount
@@ -69,7 +70,6 @@ export default function HouseholdMessagingPage() {
                 fetchedMessages.push({ id: doc.id, ...doc.data() } as Message);
             });
             setMessages(fetchedMessages);
-            
             // Mark messages as read when they are loaded
             markMessagesAsRead(selectedChatRoom.id, user.uid);
         }, (error) => {
@@ -91,13 +91,12 @@ export default function HouseholdMessagingPage() {
         const fetchOtherUserProfile = async () => {
             if (!user) return;
             // Get the worker ID (the participant that's not the current user)
-            const workerId = selectedChatRoom.participants.find(id => id !== user.uid);
+            const workerId = selectedChatRoom.participants.find((id: string) => id !== user.uid);
             if (workerId) {
                 const profile = await getUserProfile(workerId, 'worker');
                 setOtherUserProfile(profile);
             }
         };
-
         fetchOtherUserProfile();
     }, [selectedChatRoom, user]);
 
@@ -260,41 +259,22 @@ export default function HouseholdMessagingPage() {
                             </Button>
                         </CardHeader>
                         <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
-                            {messages.map((message) => {
-                                const isCurrentUser = message.senderId === user?.uid;
-                                // Highlight ETA messages by prefix
-                                if (typeof message.text === 'string' && message.text.startsWith('ETA:')) {
-                                    return (
-                                        <div key={message.id} className="flex items-center justify-center">
-                                            <div className="bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg text-sm font-semibold">
-                                                {message.text}
-                                            </div>
-                                        </div>
-                                    );
-                                }
-                                return (
-                                    <div key={message.id} className={cn("flex items-end gap-2", isCurrentUser && "justify-end")}> 
-                                        {!isCurrentUser && (
-                                            <Avatar className="h-8 w-8">
-                                                <AvatarImage src={otherUserProfile?.profilePicture || "https://placehold.co/100x100.png"} />
-                                                <AvatarFallback>{otherUserProfile?.fullName?.charAt(0) || 'W'}</AvatarFallback>
-                                            </Avatar>
-                                        )}
-                                        <div className={cn(
-                                            "p-3 rounded-lg max-w-xs text-sm", 
-                                            isCurrentUser ? "bg-primary text-primary-foreground" : "bg-muted"
-                                        )}>
-                                            <p>{message.text}</p>
-                                        </div>
-                                        {isCurrentUser && (
-                                            <Avatar className="h-8 w-8">
-                                                <AvatarImage src={user?.photoURL || 'https://placehold.co/100x100.png'} />
-                                                <AvatarFallback>{user?.displayName?.charAt(0) || 'Me'}</AvatarFallback>
-                                            </Avatar>
-                                        )}
+                            {messages.map((msg) => (
+                                <div key={msg.id} className={cn(
+                                    "flex flex-col",
+                                    msg.senderId === user?.uid ? "items-end" : "items-start"
+                                )}>
+                                    <div className={cn(
+                                        "rounded-lg px-4 py-2 max-w-xs",
+                                        msg.senderId === user?.uid ? "bg-primary text-primary-foreground" : "bg-muted"
+                                    )}>
+                                        <span>{msg.text}</span>
                                     </div>
-                                )
-                            })}
+                                    <span className="text-xs text-muted-foreground mt-1">
+                                        {msg.senderName}
+                                    </span>
+                                </div>
+                            ))}
                             <div ref={messagesEndRef} />
                         </CardContent>
                         <div className="p-4 border-t space-y-2">
@@ -338,5 +318,5 @@ export default function HouseholdMessagingPage() {
                 )}
             </Card>
         </div>
-    )
+    );
 }

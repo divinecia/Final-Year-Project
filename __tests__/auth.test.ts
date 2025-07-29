@@ -1,9 +1,6 @@
-
-
-
-
 // Suppress console.error to reduce test noise from expected errors
-let consoleErrorSpy: jest.SpyInstance;
+import { jest, describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
+let consoleErrorSpy: ReturnType<typeof jest.spyOn>;
 beforeAll(() => {
   consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 });
@@ -12,34 +9,37 @@ afterAll(() => {
 });
 
 // Firebase cleanup to help Jest exit cleanly
+// @ts-ignore: fallback if firebase/app types are missing
+import type { FirebaseApp } from 'firebase/app';
+// @ts-ignore: fallback if firebase/app types are missing
 import { getApps, deleteApp } from 'firebase/app';
 afterAll(async () => {
-  await Promise.all(getApps().map(app => deleteApp(app)));
+  await Promise.all(getApps().map((app: FirebaseApp) => deleteApp(app)));
 });
 
 
 // Mock Firebase Auth for negative/edge cases
 jest.mock('@/lib/auth', () => {
-  const original = jest.requireActual('@/lib/auth');
+  const original = jest.requireActual('@/lib/auth') || {};
   // In-memory store for registered users
   const registeredUsers: Record<string, { password: string; role: string }> = {};
   return {
-    ...original,
-    sendPasswordResetEmail: jest.fn(async (email, userType) => {
+    ...(typeof original === 'object' ? original : {}),
+    sendPasswordResetEmail: jest.fn(async (email: string, userType: string) => {
       if (!email) throw new Error('auth/missing-email');
-      if (!email.includes('@')) throw new Error('auth/invalid-email');
+      if (typeof email !== 'string' || !email.includes('@')) throw new Error('auth/invalid-email');
       return true;
     }),
-    signUpWithEmailAndPassword: jest.fn(async (email, password, role) => {
-      if (!email.includes('@')) return { success: false, error: 'auth/invalid-email' };
-      if (password.length < 6) return { success: false, error: 'auth/weak-password' };
+    signUpWithEmailAndPassword: jest.fn(async (email: string, password: string, role: string) => {
+      if (typeof email !== 'string' || !email.includes('@')) return { success: false, error: 'auth/invalid-email' };
+      if (typeof password !== 'string' || password.length < 6) return { success: false, error: 'auth/weak-password' };
       if (email === 'existinguser@example.com') return { success: false, error: 'auth/email-already-in-use' };
       // Store the user for later login
       registeredUsers[email] = { password, role };
       return { success: true, uid: 'mockuid' };
     }),
-    signInWithEmailAndPasswordHandler: jest.fn(async (email, password, role) => {
-      if (!email.includes('@')) return { success: false, error: 'auth/invalid-email' };
+    signInWithEmailAndPasswordHandler: jest.fn(async (email: string, password: string, role: string) => {
+      if (typeof email !== 'string' || !email.includes('@')) return { success: false, error: 'auth/invalid-email' };
       if (email === 'fakeadmin@example.com') return { success: false, error: 'auth/user-not-found' };
       if (
         (email === 'admin@example.com' && password === 'adminpassword' && role === 'admin') ||
@@ -55,11 +55,11 @@ jest.mock('@/lib/auth', () => {
       }
       return { success: false, error: 'auth/invalid-credential' };
     }),
-    signInWithGoogle: jest.fn(async (role) => {
+    signInWithGoogle: jest.fn(async (role: string) => {
       if (role !== 'admin') return { success: false, error: 'auth/invalid-role' };
       return { success: false, error: 'auth/operation-not-supported-in-this-environment' };
     }),
-    signInWithGitHub: jest.fn(async (role) => {
+    signInWithGitHub: jest.fn(async (role: string) => {
       if (role !== 'admin') return { success: false, error: 'auth/invalid-role' };
       return { success: false, error: 'auth/operation-not-supported-in-this-environment' };
     })

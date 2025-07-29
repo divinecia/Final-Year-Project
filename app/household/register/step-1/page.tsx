@@ -242,7 +242,6 @@ export default function HouseholdRegisterStep1Page() {
                   setFormData((prev: any) => ({ ...prev, email }));
                   router.push("/household/register/step-2");
                 }}
-                userType="household"
               />
             </div>
             <div className="text-center text-xs text-muted-foreground mt-2">or fill out the form below</div>

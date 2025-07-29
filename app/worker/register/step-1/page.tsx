@@ -112,7 +112,6 @@ export default function WorkerRegisterStep1Page() {
                   setFormData((prev: any) => ({ ...prev, email }));
                   router.push("/worker/register/step-2");
                 }}
-                userType="worker"
               />
             </div>
             <div className="text-center text-xs text-muted-foreground mt-2">or fill out the form below</div>

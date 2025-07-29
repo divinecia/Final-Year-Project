@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Mail, Phone as PhoneIcon, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 export default function AdminForgotPasswordPage() {
   const [method, setMethod] = useState<'email' | 'phone'>('email');
@@ -50,54 +51,74 @@ export default function AdminForgotPasswordPage() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-20 p-6 bg-white rounded shadow">
-      <h1 className="text-2xl font-bold mb-4 text-center">Admin Forgot Password</h1>
-      <div className="flex mb-4 space-x-2">
+    <div className="max-w-md mx-auto mt-24 p-8 bg-white rounded-2xl shadow-lg border border-blue-100 animate-fade-in">
+      <h1 className="text-3xl font-extrabold mb-2 text-center text-blue-700 flex items-center justify-center gap-2">
+        <span>Admin Password Reset</span>
+      </h1>
+      <p className="text-center text-gray-500 mb-6">Choose how to receive your reset instructions.</p>
+      <div className="flex mb-6 gap-2">
         <button
           type="button"
-          className={`flex-1 py-2 rounded transition-colors duration-150 ${method === 'email' ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-medium border transition-colors duration-150 ${method === 'email' ? 'bg-blue-600 text-white border-blue-600 shadow' : 'bg-gray-100 border-gray-200 hover:bg-gray-200'}`}
           onClick={() => { setMethod('email'); setValue(''); setError(''); setMessage(''); }}
           aria-pressed={method === 'email'}
         >
-          Email
+          <Mail className="w-5 h-5" /> Email
         </button>
         <button
           type="button"
-          className={`flex-1 py-2 rounded transition-colors duration-150 ${method === 'phone' ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-medium border transition-colors duration-150 ${method === 'phone' ? 'bg-blue-600 text-white border-blue-600 shadow' : 'bg-gray-100 border-gray-200 hover:bg-gray-200'}`}
           onClick={() => { setMethod('phone'); setValue(''); setError(''); setMessage(''); }}
           aria-pressed={method === 'phone'}
         >
-          Phone
+          <PhoneIcon className="w-5 h-5" /> Phone
         </button>
       </div>
-      <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
+      <form onSubmit={handleSubmit} className="space-y-5" autoComplete="off">
         <label className="block">
-          <span className="block mb-1 font-medium">
+          <span className="block mb-1 font-semibold text-gray-700">
             {method === 'email' ? 'Admin Email' : 'Admin Phone'}
           </span>
-          <input
-            type={method === 'email' ? 'email' : 'tel'}
-            className="w-full border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-            placeholder={method === 'email' ? 'Enter your admin email' : 'Enter your admin phone'}
-            value={value}
-            onChange={e => setValue(e.target.value)}
-            required
-            autoFocus
-            inputMode={method === 'email' ? 'email' : 'tel'}
-            pattern={method === 'email' ? undefined : '\\d{10,15}'}
-            disabled={loading}
-          />
+          <div className="relative">
+            <input
+              type={method === 'email' ? 'email' : 'tel'}
+              className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-lg pr-12 transition-all"
+              placeholder={method === 'email' ? 'Enter your admin email' : 'Enter your admin phone'}
+              value={value}
+              onChange={e => setValue(e.target.value)}
+              required
+              autoFocus
+              inputMode={method === 'email' ? 'email' : 'tel'}
+              pattern={method === 'email' ? undefined : '\\d{10,15}'}
+              disabled={loading}
+              aria-label={method === 'email' ? 'Admin Email' : 'Admin Phone'}
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+              {method === 'email' ? <Mail className="w-5 h-5" /> : <PhoneIcon className="w-5 h-5" />}
+            </span>
+          </div>
         </label>
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded disabled:opacity-50 transition-colors duration-150"
+          className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold text-lg flex items-center justify-center gap-2 disabled:opacity-60 transition-colors duration-150 shadow"
           disabled={loading}
         >
+          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
           {loading ? 'Sending...' : 'Send Reset Instructions'}
         </button>
       </form>
-      {message && <p className="text-green-600 mt-4 text-center">{message}</p>}
-      {error && <p className="text-red-600 mt-4 text-center">{error}</p>}
+      {message && (
+        <div className="flex items-center justify-center gap-2 text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2 mt-6 animate-fade-in">
+          <CheckCircle2 className="w-5 h-5" />
+          <span>{message}</span>
+        </div>
+      )}
+      {error && (
+        <div className="flex items-center justify-center gap-2 text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-2 mt-6 animate-fade-in">
+          <AlertTriangle className="w-5 h-5" />
+          <span>{error}</span>
+        </div>
+      )}
     </div>
   );
 }

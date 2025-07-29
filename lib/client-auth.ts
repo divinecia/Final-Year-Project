@@ -1,10 +1,10 @@
 'use client';
 
 import { auth } from './firebase';
-import { 
-  signInWithEmailAndPassword, 
+import {
+  signInWithEmailAndPassword as firebaseSignIn,
   createUserWithEmailAndPassword,
-  signOut,
+  signOut as firebaseSignOut,
   signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
@@ -176,7 +176,7 @@ export async function signInWithGoogle(): Promise<AuthResult> {
     if (isReplit) {
       await signInWithRedirect(auth, provider);
       // The result will be handled by getRedirectResult on page load
-      return { success: true, user: null };
+      return { success: true };
     } else {
       const result = await signInWithPopup(auth, provider);
       return { success: true, user: result.user };
@@ -213,7 +213,7 @@ export async function signInWithGitHub(): Promise<AuthResult> {
     if (isReplit) {
       await signInWithRedirect(auth, provider);
       // The result will be handled by getRedirectResult on page load
-      return { success: true, user: null };
+      return { success: true };
     } else {
       const result = await signInWithPopup(auth, provider);
       return { success: true, user: result.user };

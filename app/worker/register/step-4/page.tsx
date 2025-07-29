@@ -225,7 +225,6 @@ export default function WorkerRegisterStep4Page() {
           <OAuthButtons 
             onSuccess={handleOAuthSuccess}
             disabled={form.formState.isSubmitting}
-            userType="worker"
           />
           
           <Form {...form}>

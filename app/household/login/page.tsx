@@ -100,7 +100,6 @@ export default function HouseholdLoginPage() {
                             onSuccess={() => {
                               router.push("/household/dashboard");
                             }}
-                            userType="household"
                           />
                         </div>
                         <div className="text-center text-xs text-muted-foreground mt-2">or use your email and password below</div>

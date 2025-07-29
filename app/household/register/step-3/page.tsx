@@ -161,7 +161,6 @@ export default function HouseholdRegisterStep3Page() {
           <OAuthButtons 
             onSuccess={handleOAuthSuccess}
             disabled={form.formState.isSubmitting}
-            userType="household"
           />
           
           <Form {...form}>

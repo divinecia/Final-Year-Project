@@ -8,9 +8,8 @@ const nextConfig: NextConfig = {
   
   // Allow dev origins for Replit
   experimental: {
-    allowedDevOrigins: [
-      'a28b2ceb-1cb6-4ce6-ac52-346d89bf7fb7-00-2csy9vsk3kznu.picard.replit.dev'
-    ],
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+    // merge any other experimental options here
   },
   
   // Output configuration for deployment
@@ -24,10 +23,6 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: false,
   },
   
-  // Development optimizations
-  experimental: {
-    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
-  },
   
   // Image optimizations
   images: {
