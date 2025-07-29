@@ -33,7 +33,8 @@
       ]
     },
     "types": [
-      "aws-lambda"
+      "aws-lambda",
+      "jest"
     ],
     "incremental": true,
     "tsBuildInfoFile": "./.next/cache/tsbuildinfo",
@@ -44,6 +45,7 @@
     ]
   },
   "include": [
+    "next-pwa.d.ts",
     "**/*.ts",
     "**/*.tsx",
     "next-env.d.ts",

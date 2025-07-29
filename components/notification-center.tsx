@@ -9,7 +9,7 @@ import { Badge } from "../components/ui/badge"
 import { ScrollArea } from "../components/ui/scroll-area"
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover"
 // Adjust the import based on the actual export from use-auth
-import useAuth from "../hooks/use-auth"
+import { useAuth } from "../hooks/use-auth"
 import { useToast } from "../hooks/use-toast"
 import { db } from "../lib/firebase"
 import { doc, updateDoc, deleteDoc, writeBatch, collection, query, where, orderBy, onSnapshot } from "firebase/firestore"
