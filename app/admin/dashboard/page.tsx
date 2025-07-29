@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Briefcase, Wallet, CheckCircle } from "lucide-react";
+import { Users, Wallet, CheckCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,6 @@ function StatCard({ title, icon, value, loading, helper }: StatCardProps) {
 }
 
 // Skeleton row for loading state in tables
-type SkeletonRowProps = { count?: number };
 const WorkerSkeletonRow: React.FC = () => (
   <TableRow>
     <TableCell><Skeleton className="h-5 w-32" /></TableCell>

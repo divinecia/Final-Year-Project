@@ -3,13 +3,11 @@
 import * as React from "react"
 import { Bell, Check, X } from "lucide-react"
 import { Button } from "../components/ui/button"
-// Update the import path below if your Card components are located elsewhere
 import { Card, CardContent } from "../components/ui/card"
 import { Badge } from "../components/ui/badge"
 import { ScrollArea } from "../components/ui/scroll-area"
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover"
-// Adjust the import based on the actual export from use-auth
-import useAuth from "../hooks/use-auth"
+import { useAuth } from "../hooks/use-auth"
 import { useToast } from "../hooks/use-toast"
 import { db } from "../lib/firebase"
 import { doc, updateDoc, deleteDoc, writeBatch, collection, query, where, orderBy, onSnapshot } from "firebase/firestore"
@@ -33,7 +31,7 @@ interface NotificationItemProps {
 function NotificationItem({ notification, onMarkAsRead, onDelete }: NotificationItemProps) {
   const typeColors = {
     info: "bg-blue-100 text-blue-800",
-    success: "bg-green-100 text-green-800", 
+    success: "bg-green-100 text-green-800",
     warning: "bg-yellow-100 text-yellow-800",
     error: "bg-red-100 text-red-800"
   }
@@ -49,14 +47,17 @@ function NotificationItem({ notification, onMarkAsRead, onDelete }: Notification
                 {notification.type}
               </Badge>
               {!notification.read && (
-                <div className="w-2 h-2 bg-primary rounded-full" />
+                <span className="w-2 h-2 bg-primary rounded-full" aria-label="Unread" />
               )}
             </div>
             <p className="text-sm text-muted-foreground mb-2">
               {notification.description}
             </p>
             <p className="text-xs text-muted-foreground">
-              {new Date(notification.createdAt).toLocaleDateString()}
+              {new Date(notification.createdAt).toLocaleString(undefined, {
+                dateStyle: "medium",
+                timeStyle: "short"
+              })}
             </p>
           </div>
           <div className="flex gap-1 ml-2">
@@ -64,6 +65,7 @@ function NotificationItem({ notification, onMarkAsRead, onDelete }: Notification
               <Button
                 variant="ghost"
                 size="sm"
+                aria-label="Mark as read"
                 onClick={() => onMarkAsRead(notification.id)}
               >
                 <Check className="h-3 w-3" />
@@ -72,6 +74,7 @@ function NotificationItem({ notification, onMarkAsRead, onDelete }: Notification
             <Button
               variant="ghost"
               size="sm"
+              aria-label="Delete notification"
               onClick={() => onDelete(notification.id)}
             >
               <X className="h-3 w-3" />
@@ -89,14 +92,15 @@ export function NotificationCenter() {
   const [notifications, setNotifications] = React.useState<Notification[]>([])
   const [loading, setLoading] = React.useState(false)
   const [open, setOpen] = React.useState(false)
+  const unsubscribeRef = React.useRef<null | (() => void)>(null)
 
   const unreadCount = notifications.filter(n => !n.read).length
 
-  const setupRealtimeNotifications = React.useCallback(() => {
-    if (!user) return
+  // Real-time notifications subscription
+  React.useEffect(() => {
+    if (!user || !open) return
 
     setLoading(true)
-    
     const notificationsQuery = query(
       collection(db, 'notifications'),
       where('userId', '==', user.uid),
@@ -129,124 +133,84 @@ export function NotificationCenter() {
       setLoading(false)
     })
 
-    return unsubscribe
-  }, [user, toast])
+    unsubscribeRef.current = unsubscribe
 
-  React.useEffect(() => {
-    if (user && open) {
-      setupRealtimeNotifications()
+    return () => {
+      unsubscribe()
+      unsubscribeRef.current = null
     }
-  }, [user, open, setupRealtimeNotifications])
+  }, [user, open, toast])
 
-  const fetchNotifications = async () => {
-    // Fallback method if real-time doesn't work
-    if (!user) return
-    
-    setLoading(true)
+  // Mark as read
+  const markAsRead = React.useCallback(async (id: string) => {
     try {
-      // For demo purposes, show sample notifications if none exist
-      const mockNotifications: Notification[] = [
-        {
-          id: "1",
-          title: "New booking request",
-          description: "You have a new cleaning service request",
-          type: "info",
-          read: false,
-          createdAt: new Date().toISOString()
-        },
-        {
-          id: "2", 
-          title: "Payment received",
-          description: "Payment of $50 has been processed",
-          type: "success",
-          read: true,
-          createdAt: new Date(Date.now() - 86400000).toISOString()
-        }
-      ]
-      setNotifications(mockNotifications)
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load notifications"
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const markAsRead = async (id: string) => {
-    try {
-      setNotifications(prev => 
+      setNotifications(prev =>
         prev.map(n => n.id === id ? { ...n, read: true } : n)
       )
-      
-      // Update notification in Firebase
       if (user) {
         const notificationRef = doc(db, 'notifications', id)
         await updateDoc(notificationRef, { read: true })
       }
-    } catch (error) {
+    } catch {
       toast({
         variant: "destructive",
         title: "Error",
         description: "Failed to mark notification as read"
       })
     }
-  }
+  }, [user, toast])
 
-  const deleteNotification = async (id: string) => {
+  // Delete notification
+  const deleteNotification = React.useCallback(async (id: string) => {
     try {
       setNotifications(prev => prev.filter(n => n.id !== id))
-      
-      // Delete notification from Firebase
       if (user) {
         const notificationRef = doc(db, 'notifications', id)
         await deleteDoc(notificationRef)
       }
-    } catch (error) {
+    } catch {
       toast({
         variant: "destructive",
-        title: "Error", 
+        title: "Error",
         description: "Failed to delete notification"
       })
     }
-  }
+  }, [user, toast])
 
-  const markAllAsRead = async () => {
+  // Mark all as read
+  const markAllAsRead = React.useCallback(async () => {
     try {
       setNotifications(prev => prev.map(n => ({ ...n, read: true })))
-      
-      // Update all unread notifications in Firebase
       if (user) {
         const unreadNotifications = notifications.filter(n => !n.read)
         const batch = writeBatch(db)
-        
         unreadNotifications.forEach(notification => {
           const notificationRef = doc(db, 'notifications', notification.id)
           batch.update(notificationRef, { read: true })
         })
-        
         await batch.commit()
       }
-    } catch (error) {
+    } catch {
       toast({
         variant: "destructive",
         title: "Error",
         description: "Failed to mark all notifications as read"
       })
     }
-  }
+  }, [user, notifications, toast])
 
-  // Don't render if user is not authenticated and not loading
-  if (!user && !authLoading) {
-    return null
-  }
+  if (!user && !authLoading) return null
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative" disabled={authLoading}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative"
+          disabled={authLoading}
+          aria-label="Open notifications"
+        >
           <Bell className="h-4 w-4" />
           {unreadCount > 0 && (
             <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs">
@@ -269,15 +233,18 @@ export function NotificationCenter() {
         <ScrollArea className="h-80">
           <div className="p-4">
             {loading ? (
-              <div className="text-center text-muted-foreground">
-                Loading...
+              <div className="flex justify-center items-center h-32">
+                <svg className="animate-spin h-5 w-5 text-muted-foreground" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                </svg>
               </div>
             ) : notifications.length === 0 ? (
               <div className="text-center text-muted-foreground">
                 No notifications
               </div>
             ) : (
-              notifications.map(notification => (
+              notifications.map((notification) => (
                 <NotificationItem
                   key={notification.id}
                   notification={notification}

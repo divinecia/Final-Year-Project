@@ -5,7 +5,6 @@ import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal, Search, FileDown, Trash2, Eye } from "lucide-react"
 import { Input } from "@/components/ui/input"
@@ -42,7 +41,7 @@ export default function AdminHouseholdsPage() {
             const fetchedHouseholds = await getHouseholds();
             setHouseholds(fetchedHouseholds);
             setFilteredHouseholds(fetchedHouseholds);
-        } catch (error) {
+        } catch {
             toast({
                 variant: "destructive",
                 title: "Error",

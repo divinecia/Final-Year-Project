@@ -28,7 +28,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { Checkbox } from "@/components/ui/checkbox"
 import { serviceOptions } from "@/lib/services"
-import { packageSchema, createPackage, updatePackage, type ServicePackage, type ServicePackageFormData } from "./actions";
+import { packageSchema, createPackage, updatePackage, type ServicePackage } from "./actions";
 
 type PackageFormProps = {
   open: boolean;

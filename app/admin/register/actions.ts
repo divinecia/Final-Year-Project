@@ -6,15 +6,6 @@ import { doc, setDoc, Timestamp } from 'firebase/firestore';
 import { z } from 'zod';
 import { signUpWithEmailAndPassword } from '@/lib/auth';
 
-const AdminRegistrationSchema = z.object({
-  fullName: z.string().min(2, "Full name is required."),
-  employeeId: z.string().min(1, "Employee ID is required."),
-  email: z.string().email("A valid official email is required."),
-  phone: z.string().regex(/^\d{10}$/, "Please enter a valid 10-digit phone number."),
-  department: z.string({ required_error: "Department is required." }),
-  roleLevel: z.string({ required_error: "Role level is required." }),
-  password: z.string().min(8, "Password must be at least 8 characters."),
-});
 
 export type AdminRegistrationData = z.infer<typeof AdminRegistrationSchema>;
 

@@ -21,7 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Logo } from "@/components/logo";
 import { useToast } from "@/hooks/use-toast";
-import { registerAdmin, type AdminRegistrationData } from "./actions";
+import { registerAdmin } from "./actions";
 
 const formSchema = z.object({
   fullName: z.string().min(2, "Full name is required."),
@@ -69,12 +69,12 @@ export default function AdminRegisterPage() {
                 description: result.error || "Could not create admin account.",
             })
         }
-    } catch (error) {
+    } catch {
         toast({
             variant: "destructive",
             title: "Error",
             description: "An unexpected error occurred. Please try again.",
-        })
+        });
     }
   }
 

@@ -28,15 +28,13 @@ const dashboardData = [
 ]
 
 export default function AdminReportsPage() {
-    const [stats, setStats] = React.useState<{ jobsCompleted: number }>({ jobsCompleted: 0 })
     const [loading, setLoading] = React.useState(true)
     const { toast } = useToast()
 
     React.useEffect(() => {
         const fetchStats = async () => {
             try {
-                const statsData = await getDashboardStats()
-                setStats({ jobsCompleted: statsData.jobsCompleted })
+                await getDashboardStats()
             } catch {
                 toast({ variant: "destructive", title: "Error", description: "Failed to load report data." })
             } finally {

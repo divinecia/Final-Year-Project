@@ -4,8 +4,7 @@ import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { StatusBadge, StatusSelect } from "@/components/ui/status-components"
+import { StatusBadge } from "@/components/ui/status-components"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal, Search, FileDown, Trash2, Eye, Sparkles } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -44,7 +43,7 @@ export default function AdminJobsPage() {
             const fetchedJobs = await getJobs();
             setJobs(fetchedJobs);
             setFilteredJobs(fetchedJobs);
-        } catch (error) {
+        } catch {
             toast({ variant: "destructive", title: "Error", description: "Could not fetch job postings." });
         } finally {
             setLoading(false);
@@ -82,7 +81,7 @@ export default function AdminJobsPage() {
     const handleApprove = async (jobId: string, jobTitle: string) => {
         const result = await approveJob(jobId);
         if (result.success) {
-            toast({ title: "Job Approved", description: `Job \"${jobTitle}\" is now visible to workers.` });
+            toast({ title: "Job Approved", description: `Job "${jobTitle}" is now visible to workers.` });
             fetchJobs();
         } else {
             toast({ variant: "destructive", title: "Error", description: result.error });

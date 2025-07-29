@@ -11,7 +11,6 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarProvider,
-  SidebarInset,
   SidebarTrigger,
   SidebarFooter,
   SidebarGroup,
@@ -24,13 +23,11 @@ import {
   AreaChart,
   Settings,
   LogOut,
-  User,
   GraduationCap,
-  Package,
+  Package
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { LogoWithName } from "@/components/logo"
-import { useSidebar } from "@/components/ui/sidebar"
 import { usePathname, useRouter } from "next/navigation"
 import { signOut } from "@/lib/auth"
 import { useToast } from "@/hooks/use-toast"

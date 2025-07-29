@@ -24,7 +24,6 @@ export async function approveJob(jobId: string): Promise<{ success: boolean; err
     }
 }
 
-'use server';
 
 import { db } from '@/lib/firebase';
 import { collection, getDocs, getDoc, query, orderBy, Timestamp, doc, deleteDoc, updateDoc, addDoc } from 'firebase/firestore';

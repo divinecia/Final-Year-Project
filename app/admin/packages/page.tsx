@@ -41,7 +41,7 @@ export default function AdminPackagesPage() {
         try {
             const fetchedPackages = await getPackages();
             setPackages(fetchedPackages);
-        } catch (error) {
+        } catch {
             toast({
                 variant: "destructive",
                 title: "Error",

@@ -5,7 +5,6 @@ import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
 import { StatusBadge } from "@/components/ui/status-components"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -44,7 +43,7 @@ export default function AdminPaymentsPage() {
                 ]);
                 setServicePayments(serviceData);
                 setTrainingPayments(trainingData);
-            } catch (e) {
+            } catch {
                 toast({ variant: "destructive", title: "Error", description: "Could not fetch payments." });
             } finally {
                 setLoading(false);
