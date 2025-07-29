@@ -23,7 +23,9 @@ import {
   Settings,
   LogOut,
   GraduationCap,
-  Package
+  Package,
+  HardHat,
+  Building2,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { LogoWithName } from "@/components/logo"
@@ -40,8 +42,8 @@ type MenuItem = {
 
 const menuItems: MenuItem[] = [
   { href: "/admin/dashboard", icon: <Home />, label: "Dashboard", exact: true },
-  { href: "/admin/workers/workermanage", icon: <Users />, label: "Workers" },
-  { href: "/admin/households", icon: <Users />, label: "Households" },
+  { href: "/admin/workers/workermanage", icon: <HardHat />, label: "Workers" },
+  { href: "/admin/households", icon: <Building2 />, label: "Households" },
   { href: "/admin/jobs", icon: <Briefcase />, label: "Jobs" },
   { href: "/admin/training", icon: <GraduationCap />, label: "Training" },
   { href: "/admin/packages", icon: <Package />, label: "Service Packages" },
