@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -52,11 +51,14 @@ export function PackageForm({ open, onOpenChange, onFormSubmit, initialData }: P
     },
   });
 
+  // Only reset if initialData changes
   React.useEffect(() => {
     if (initialData) {
       form.reset({
         ...initialData,
+        price: Number(initialData.price) || 0,
         billingCycle: initialData.billingCycle as 'one-time' | 'weekly' | 'monthly' | undefined,
+        services: initialData.services || [],
       });
     } else {
       form.reset({
@@ -67,7 +69,8 @@ export function PackageForm({ open, onOpenChange, onFormSubmit, initialData }: P
         services: [],
       });
     }
-  }, [initialData, form]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialData]);
 
   async function onSubmit(values: z.infer<typeof packageSchema>) {
     const action = isEditing ? "Updating" : "Creating";
@@ -113,94 +116,117 @@ export function PackageForm({ open, onOpenChange, onFormSubmit, initialData }: P
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Package Name</FormLabel>
-                  <FormControl><Input placeholder="e.g., Basic Weekly Cleaning" {...field} /></FormControl>
+                  <FormControl>
+                    <Input placeholder="e.g., Basic Weekly Cleaning" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                    control={form.control}
-                    name="price"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Price (RWF)</FormLabel>
-                        <FormControl><Input type="number" placeholder="e.g., 25000" {...field} /></FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="billingCycle"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Billing Cycle</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Select a cycle" /></SelectTrigger></FormControl>
-                        <SelectContent>
-                            <SelectItem value="one-time">One-time</SelectItem>
-                            <SelectItem value="weekly">Weekly</SelectItem>
-                            <SelectItem value="monthly">Monthly</SelectItem>
-                        </SelectContent>
-                        </Select>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-             </div>
-             <FormField
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="price"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Price (RWF)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="e.g., 25000"
+                        {...field}
+                        onChange={e => field.onChange(Number(e.target.value))}
+                        min={0}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="billingCycle"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Billing Cycle</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a cycle" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="one-time">One-time</SelectItem>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <FormField
               control={form.control}
               name="description"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Description</FormLabel>
-                  <FormControl><Textarea placeholder="Describe what this package includes." rows={3} {...field} /></FormControl>
+                  <FormControl>
+                    <Textarea placeholder="Describe what this package includes." rows={3} {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
             <FormField
-                control={form.control}
-                name="services"
-                render={() => (
-                  <FormItem>
-                    <FormLabel>Included Services</FormLabel>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {serviceOptions.map((service) => (
-                        <FormField
-                          key={service.id}
-                          control={form.control}
-                          name="services"
-                          render={({ field }) => (
-                            <FormItem key={service.id} className="flex flex-row items-start space-x-3 space-y-0">
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value?.includes(service.id)}
-                                  onCheckedChange={(checked) => {
-                                    return checked
-                                      ? field.onChange([...(field.value || []), service.id])
-                                      : field.onChange(
-                                          field.value?.filter((value) => value !== service.id)
-                                        );
-                                  }}
-                                />
-                              </FormControl>
-                              <FormLabel className="font-normal">{service.label}</FormLabel>
-                            </FormItem>
-                          )}
-                        />
-                      ))}
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              control={form.control}
+              name="services"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Included Services</FormLabel>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {serviceOptions.map((service) => (
+                      <div key={service.id} className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value?.includes(service.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                field.onChange([...(field.value || []), service.id]);
+                              } else {
+                                field.onChange(field.value?.filter((value) => value !== service.id));
+                              }
+                            }}
+                            aria-label={service.label}
+                          />
+                        </FormControl>
+                        <FormLabel className="font-normal">{service.label}</FormLabel>
+                      </div>
+                    ))}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? (isEditing ? 'Saving...' : 'Creating...') : (isEditing ? 'Save Changes' : 'Create Package')}
-                </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                aria-label="Cancel"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={form.formState.isSubmitting || !form.formState.isValid}
+                aria-label={isEditing ? "Save Changes" : "Create Package"}
+              >
+                {form.formState.isSubmitting
+                  ? (isEditing ? 'Saving...' : 'Creating...')
+                  : (isEditing ? 'Save Changes' : 'Create Package')}
+              </Button>
             </DialogFooter>
           </form>
         </Form>

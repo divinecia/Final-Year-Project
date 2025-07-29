@@ -15,7 +15,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
-export interface DatabaseResult<T = any> {
+export interface DatabaseResult<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;

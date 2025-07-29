@@ -26,7 +26,7 @@ export default function WorkerForgotPasswordPage() {
       } else {
         setError(data.error || 'Failed to send reset instructions.');
       }
-    } catch (err) {
+    } catch {
       setError('Failed to send reset instructions.');
     } finally {
       setLoading(false);

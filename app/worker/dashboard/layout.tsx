@@ -29,7 +29,6 @@ import {
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { LogoWithName } from "@/components/logo"
-import { useSidebar } from "@/components/ui/sidebar"
 import { Badge } from "@/components/ui/badge"
 import { signOut } from "@/lib/auth"
 import { useToast } from "@/hooks/use-toast"

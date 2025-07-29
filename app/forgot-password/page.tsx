@@ -51,13 +51,13 @@ export default function ForgotPasswordPage() {
         const formattedPhone = `+25${values.contactInfo.replace(/\s/g, '')}`;
         
         // This must be a global window object for Firebase to find it.
-        if (!(window as any).recaptchaVerifier) {
-            (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        if (!(window as unknown as { recaptchaVerifier?: unknown }).recaptchaVerifier) {
+            (window as unknown as { recaptchaVerifier?: unknown }).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
                 'size': 'invisible',
             });
         }
         
-        const appVerifier = (window as any).recaptchaVerifier;
+        const appVerifier = (window as unknown as { recaptchaVerifier: unknown }).recaptchaVerifier;
         const verificationId = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
       
         toast({
@@ -67,12 +67,16 @@ export default function ForgotPasswordPage() {
 
         router.push(`/forgot-password/verify?contact=${encodeURIComponent(values.contactInfo)}&verificationId=${verificationId}`);
 
-    } catch (error: any) {
+    } catch (error) {
         console.error("Firebase phone auth error:", error);
+        let message = "An unknown error occurred. Make sure you have entered a valid phone number.";
+        if (error && typeof error === "object" && "message" in error && typeof (error as { message?: string }).message === "string") {
+            message = (error as { message: string }).message;
+        }
         toast({
             variant: "destructive",
             title: "Failed to Send Code",
-            description: error.message || "An unknown error occurred. Make sure you have entered a valid phone number.",
+            description: message,
         });
         setIsSending(false);
     }

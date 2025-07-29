@@ -10,8 +10,20 @@ export type AdminUser = {
   email: string;
   role: string;
   status: 'active' | 'inactive';
-  dateJoined: string;
+  dateJoined: string; // ISO string
 };
+
+type FirestoreAdmin = {
+  fullName?: string;
+  email?: string;
+  role?: string;
+  status?: string;
+  dateJoined?: Timestamp;
+};
+
+function formatDate(date: Date): string {
+  return date.toISOString();
+}
 
 export async function getAdmins(): Promise<AdminUser[]> {
   const adminsCollection = collection(db, 'admins');
@@ -21,7 +33,7 @@ export async function getAdmins(): Promise<AdminUser[]> {
     const querySnapshot = await getDocs(q);
 
     return querySnapshot.docs.map(docSnap => {
-      const data = docSnap.data();
+      const data = docSnap.data() as FirestoreAdmin;
       return {
         id: docSnap.id,
         fullName: String(data.fullName ?? ''),
@@ -29,12 +41,13 @@ export async function getAdmins(): Promise<AdminUser[]> {
         role: String(data.role ?? 'support_agent'),
         status: data.status === 'inactive' ? 'inactive' : 'active',
         dateJoined: data.dateJoined instanceof Timestamp
-          ? data.dateJoined.toDate().toLocaleDateString()
+          ? formatDate(data.dateJoined.toDate())
           : '',
       };
     });
   } catch (error) {
     console.error('Error fetching admins:', error);
+    // Optionally, rethrow or handle differently in production
     return [];
   }
 }
@@ -45,7 +58,7 @@ export async function deleteAdmin(adminId: string): Promise<{ success: boolean; 
   }
   try {
     await deleteDoc(doc(db, 'admins', adminId));
-    revalidatePath('/admin/settings');
+    await revalidatePath('/admin/settings');
     return { success: true };
   } catch (error) {
     console.error('Error deleting admin:', error);

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Send, Phone, MessageCircle } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/hooks/use-toast"
-import { getConversations, getMessages, sendMessage, markMessagesAsRead, getUserProfile, type Message, type Conversation } from "./actions"
+import { getConversations, sendMessage, markMessagesAsRead, getUserProfile, type Message, type Conversation } from "./actions"
 import { onSnapshot, query, collection, orderBy } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { cn } from "@/lib/utils"
@@ -22,7 +22,7 @@ export default function HouseholdMessagingPage() {
     const [messages, setMessages] = React.useState<Message[]>([]);
     const [newMessage, setNewMessage] = React.useState("");
     const [loading, setLoading] = React.useState(true);
-    const [otherUserProfile, setOtherUserProfile] = React.useState<any>(null);
+    const [otherUserProfile, setOtherUserProfile] = React.useState<Record<string, unknown> | null>(null);
     const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
     // Fetch chat rooms on mount
@@ -42,6 +42,7 @@ export default function HouseholdMessagingPage() {
                     variant: "destructive",
                     title: "Error",
                     description: "Could not load chat rooms."
+                    // error is intentionally unused
                 });
             } finally {
                 setLoading(false);

@@ -4,7 +4,7 @@ import { memo, useMemo } from 'react';
 
 interface ListItem {
   id: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface OptimizedListProps<T extends ListItem> {

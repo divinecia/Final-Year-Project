@@ -12,23 +12,23 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type');
 
     switch (type) {
-      case 'pay-frequencies':
+      case 'pay-frequencies': {
         const payFrequencies = await getPayFrequencyOptions();
         return NextResponse.json({ payFrequencies });
-
-      case 'job-statuses':
+      }
+      case 'job-statuses': {
         const jobStatuses = await getJobStatusOptions();
         return NextResponse.json({ jobStatuses });
-
-      case 'user-roles':
+      }
+      case 'user-roles': {
         const userRoles = await getUserRoleOptions();
         return NextResponse.json({ userRoles });
-
-      case 'payment-statuses':
+      }
+      case 'payment-statuses': {
         const paymentStatuses = await getPaymentStatusOptions();
         return NextResponse.json({ paymentStatuses });
-
-      default:
+      }
+      default: {
         // Get all configuration options
         const [payFreqs, jobStats, userRls, payStats] = await Promise.all([
           getPayFrequencyOptions(),
@@ -36,13 +36,13 @@ export async function GET(request: NextRequest) {
           getUserRoleOptions(),
           getPaymentStatusOptions()
         ]);
-
         return NextResponse.json({
           payFrequencies: payFreqs,
           jobStatuses: jobStats,
           userRoles: userRls,
           paymentStatuses: payStats
         });
+      }
     }
 
   } catch (error) {

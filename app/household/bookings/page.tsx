@@ -13,7 +13,7 @@ import { useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/hooks/use-toast"
 import { getHouseholdBookings, cancelBooking, createReviewBooking, type Booking } from "./actions"
 import { serviceOptions } from "@/lib/services"
-import { cn } from "@/lib/utils"
+// import { cn } from "@/lib/utils"
 import { RescheduleDialog } from "./reschedule-dialog"
 
 const UpcomingBooking = ({ booking, onBookingUpdate }: { booking: Booking; onBookingUpdate: () => void }) => {
@@ -21,9 +21,9 @@ const UpcomingBooking = ({ booking, onBookingUpdate }: { booking: Booking; onBoo
     const [rescheduleOpen, setRescheduleOpen] = React.useState(false)
     const [loading, setLoading] = React.useState(false)
 
-    const getServiceName = (serviceId: string) => {
-        return serviceOptions.find(s => s.id === serviceId)?.label || serviceId;
-    }
+    // const getServiceName = (serviceId: string) => {
+    //     return serviceOptions.find(s => s.id === serviceId)?.label || serviceId;
+    // }
     
     const getStatusBadge = (status: Booking['status']) => {
         switch (status) {
@@ -63,6 +63,7 @@ const UpcomingBooking = ({ booking, onBookingUpdate }: { booking: Booking; onBoo
                 title: "Error",
                 description: "Failed to cancel booking. Please try again."
             });
+            // error is intentionally unused
         } finally {
             setLoading(false);
         }
@@ -75,6 +76,7 @@ const UpcomingBooking = ({ booking, onBookingUpdate }: { booking: Booking; onBoo
             toast({
                 variant: "destructive",
                 title: "Error",
+                // error is intentionally unused
                 description: "Worker phone number not available."
             });
         }
@@ -183,6 +185,7 @@ const PastBooking = ({ booking, onBookingUpdate }: { booking: Booking; onBooking
             toast({
                 variant: "destructive",
                 title: "Error",
+                // error is intentionally unused
                 description: "Failed to create new booking. Please try again."
             });
         } finally {
@@ -279,7 +282,8 @@ export default function BookingsPage() {
                 const fetchedBookings = await getHouseholdBookings(user.uid);
                 setBookings(fetchedBookings);
             } catch (error) {
-                console.error("Failed to fetch bookings:", error);
+                // error is intentionally unused
+                console.error("Failed to fetch bookings");
                 toast({
                     variant: "destructive",
                     title: "Error",

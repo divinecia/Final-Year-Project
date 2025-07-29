@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     const validatedParams = PaymentQuerySchema.parse(params);
     
     // Build query
-    const queryConstraints: any[] = [orderBy('createdAt', 'desc')];
+    const queryConstraints: import('firebase/firestore').QueryConstraint[] = [orderBy('createdAt', 'desc')];
     
     if (validatedParams.householdId) {
       queryConstraints.unshift(where('householdId', '==', validatedParams.householdId));
@@ -59,9 +59,8 @@ export async function GET(request: NextRequest) {
     const querySnapshot = await getDocs(q);
     
     const payments = await Promise.all(
-      querySnapshot.docs.map(async docSnapshot => {
+      querySnapshot.docs.map(async (docSnapshot): Promise<Record<string, unknown>> => {
         const data = docSnapshot.data();
-        
         // Get job details
         let jobDetails = null;
         if (data.jobId) {
@@ -75,7 +74,6 @@ export async function GET(request: NextRequest) {
             };
           }
         }
-        
         return {
           id: docSnapshot.id,
           ...data,
@@ -87,9 +85,9 @@ export async function GET(request: NextRequest) {
     );
     
     // Calculate summary statistics
-    const totalAmount = payments.reduce((sum, payment: any) => sum + (payment.amount || 0), 0);
-    const completedPayments = payments.filter((p: any) => p.status === 'completed');
-    const pendingPayments = payments.filter((p: any) => p.status === 'pending');
+    const totalAmount = payments.reduce((sum, payment) => sum + (typeof payment.amount === 'number' ? payment.amount : 0), 0);
+    const completedPayments = payments.filter((p) => p.status === 'completed');
+    const pendingPayments = payments.filter((p) => p.status === 'pending');
     
     return NextResponse.json({
       success: true,

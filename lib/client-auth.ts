@@ -150,7 +150,7 @@ export async function getIdToken(): Promise<string | null> {
   if (!user) return null;
   try {
     return await user.getIdToken();
-  } catch (error) {
+  } catch {
     return null;
   }
 }

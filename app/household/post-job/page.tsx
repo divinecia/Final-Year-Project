@@ -24,7 +24,7 @@ import { Separator } from "@/components/ui/separator"
 import { createJobPost, type JobPostFormData, jobPostSchema } from "./actions"
 import { useAuth } from "@/hooks/use-auth"
 import { useRouter } from "next/navigation"
-import { getServiceOptions, getLocationOptions, type Service } from "@/lib/services-api"
+import { getServiceOptions, getLocationOptions } from "@/lib/services-api"
 import { getPayFrequencyOptions } from "@/lib/system-config"
 
 export default function PostJobPage() {

@@ -3,7 +3,7 @@
 
 import * as React from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Bell, Archive, Briefcase, MessageSquare, Star, CheckCircle } from "lucide-react"
@@ -129,14 +129,14 @@ export default function HouseholdNotificationsPage() {
             fetchNotifications();
             toast({ title: "Success", description: "All notifications marked as read." });
         } catch (error) {
-            toast({ variant: "destructive", title: "Error", description: "Could not mark notifications as read." });
+            toast({ variant: "destructive", title: "Error", description: "Could not mark notifications as read." }); // error is intentionally unused
         }
     };
     
     const unreadNotifications = notifications.filter(n => !n.read);
 
     // Send email to ISANGE ONE STOP CENTER via API route
-    const sendIsangeEmail = async (reportData: any) => {
+    const sendIsangeEmail = async (reportData: Record<string, unknown>) => {
         try {
             const res = await fetch('/api/report/send-isange', {
                 method: 'POST',
@@ -174,7 +174,7 @@ export default function HouseholdNotificationsPage() {
             setReportModalOpen(false);
             setReportMessage('');
         } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not send report.' });
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not send report.' }); // error is intentionally unused
         } finally {
             setReportSending(false);
         }

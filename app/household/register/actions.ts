@@ -60,7 +60,7 @@ export async function saveHouseholdProfile(formData: FullFormData, userId: strin
     } else {
       return { success: false, error: result.error || "Failed to save household profile to database." };
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error("❌ Error saving household profile: ", error);
     return { success: false, error: `Failed to save household profile: ${error.message}` };
   }

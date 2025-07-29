@@ -6,13 +6,20 @@
  * Returns admin dashboard summary, activity, and recent data for UI consumption.
  * Optimized for maintainability, type safety, and performance.
  */
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
 import { collection, query, orderBy, limit, getDocs, getCountFromServer, where, Timestamp } from 'firebase/firestore';
 
 // Utility: Safely convert Firestore Timestamp or Date to ISO string
-function toIsoString(date: any): string {
-  if (date?.toDate) return date.toDate().toISOString();
+function toIsoString(date: unknown): string {
+  if (
+    typeof date === 'object' &&
+    date !== null &&
+    'toDate' in date &&
+    typeof (date as { toDate: () => Date }).toDate === 'function'
+  ) {
+    return (date as { toDate: () => Date }).toDate().toISOString();
+  }
   if (date instanceof Date) return date.toISOString();
   return new Date().toISOString();
 }
@@ -85,7 +92,7 @@ type DashboardResponse = {
  * @returns {DashboardResponse}
  */
 // Main GET handler for dashboard summary
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // --- Dashboard statistics ---
     const [workersSnap, householdsSnap, completedJobsSnap] = await Promise.all([
@@ -106,7 +113,7 @@ export async function GET(request: NextRequest) {
         const amount = Number(doc.data().amount);
         return sum + (isNaN(amount) ? 0 : amount);
       }, 0);
-    } catch (error) {
+    } catch {
       // Fallback to estimated revenue if payments collection is empty
       totalRevenue = (completedJobsSnap.data().count ?? 0) * 25000; // Average job value
     }

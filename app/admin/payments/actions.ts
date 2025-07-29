@@ -1,27 +1,38 @@
-
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, Timestamp, DocumentData } from 'firebase/firestore';
 
 export type ServicePayment = {
-    id: string;
-    date: string;
-    householdName: string;
-    workerName: string;
-    amount: number;
-    status: 'completed' | 'pending' | 'failed';
+  id: string;
+  date: string;
+  householdName: string;
+  workerName: string;
+  amount: number;
+  status: 'completed' | 'pending' | 'failed';
 };
 
 export type TrainingPayment = {
-    id: string;
-    date: string;
-    workerName: string;
-    courseTitle: string;
-    amount: number;
-    status: 'completed' | 'pending' | 'failed';
+  id: string;
+  date: string;
+  workerName: string;
+  courseTitle: string;
+  amount: number;
+  status: 'completed' | 'pending' | 'failed';
 };
 
+// Helper to safely extract and format a Firestore Timestamp
+function formatDate(ts?: Timestamp | string): string {
+  if (!ts) return '';
+  if (typeof ts === 'string') return ts;
+  if (ts instanceof Timestamp) return ts.toDate().toLocaleDateString();
+  return '';
+}
+
+function getStatus(status: unknown): 'completed' | 'pending' | 'failed' {
+  if (status === 'completed' || status === 'pending' || status === 'failed') return status;
+  return 'pending';
+}
 
 export async function getServicePayments(): Promise<ServicePayment[]> {
   try {
@@ -29,22 +40,19 @@ export async function getServicePayments(): Promise<ServicePayment[]> {
     const q = query(paymentsCollection, orderBy('createdAt', 'desc'));
     const querySnapshot = await getDocs(q);
 
-    if (querySnapshot.empty) {
-      return [];
-    }
+    if (querySnapshot.empty) return [];
 
     return querySnapshot.docs.map(doc => {
-      const data = doc.data();
-      // Use schema-aligned date field
-      const date = data.createdAt as Timestamp || data.date as Timestamp;
+      const data = doc.data() as DocumentData;
+      const date = data.createdAt ?? data.date;
       return {
         id: doc.id,
-        date: date?.toDate().toLocaleDateString() || '',
+        date: formatDate(date),
         householdName: data.householdName || 'N/A',
         workerName: data.workerName || 'N/A',
-        amount: data.amount || 0,
-        status: data.status || 'pending',
-      } as ServicePayment;
+        amount: typeof data.amount === 'number' ? data.amount : 0,
+        status: getStatus(data.status),
+      };
     });
   } catch (error) {
     console.error("Error fetching service payments: ", error);
@@ -58,21 +66,18 @@ export async function getTrainingPayments(): Promise<TrainingPayment[]> {
     const q = query(paymentsCollection, orderBy('date', 'desc'));
     const querySnapshot = await getDocs(q);
 
-    if (querySnapshot.empty) {
-      return [];
-    }
+    if (querySnapshot.empty) return [];
 
     return querySnapshot.docs.map(doc => {
-      const data = doc.data();
-      const date = data.date as Timestamp;
+      const data = doc.data() as DocumentData;
       return {
         id: doc.id,
-        date: date?.toDate().toLocaleDateString() || '',
+        date: formatDate(data.date),
         workerName: data.workerName || 'N/A',
         courseTitle: data.courseTitle || 'N/A',
-        amount: data.amount || 0,
-        status: data.status || 'pending',
-      } as TrainingPayment;
+        amount: typeof data.amount === 'number' ? data.amount : 0,
+        status: getStatus(data.status),
+      };
     });
   } catch (error) {
     console.error("Error fetching training payments: ", error);

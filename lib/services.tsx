@@ -8,9 +8,7 @@ import {
     ShoppingCart,
     Sparkles,
     Shirt,
-    Utensils,
     Wrench,
-    HandPlatter,
     HeartHandshake,
     Accessibility,
 } from "lucide-react";

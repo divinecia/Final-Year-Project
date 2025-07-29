@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator"
 import { services } from "@/lib/services"
 import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
+// import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/hooks/use-toast"
@@ -19,9 +19,9 @@ import type { Booking } from "../bookings/actions";
 import { cn } from "@/lib/utils";
 
 const WorkerCard = ({ worker }: { worker: Worker }) => {
-    const getSkillLabel = (skillId: string) => {
-        return services.find(s => s.id === skillId)?.name || skillId;
-    }
+    // const getSkillLabel = (skillId: string) => {
+    //     return services.find(s => s.id === skillId)?.name || skillId;
+    // }
 
     return (
          <Card className="flex flex-col h-full">
@@ -81,6 +81,7 @@ export default function HouseholdDashboardPage() {
                         variant: "destructive",
                         title: "Error",
                         description: "Could not load dashboard data."
+                        // error is intentionally unused
                     });
                 } finally {
                     setLoading(false);

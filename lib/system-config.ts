@@ -48,15 +48,20 @@ const CONFIG_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 /**
  * Type guard for SystemConfig
  */
-function isSystemConfig(data: any): data is SystemConfig {
+function isSystemConfig(data: unknown): data is SystemConfig {
+  if (
+    typeof data !== 'object' ||
+    data === null
+  ) {
+    return false;
+  }
+  const obj = data as Record<string, unknown>;
   return (
-    typeof data === 'object' &&
-    data !== null &&
-    typeof data.payFrequencies === 'object' &&
-    typeof data.jobStatuses === 'object' &&
-    typeof data.userRoles === 'object' &&
-    typeof data.paymentStatuses === 'object' &&
-    typeof data.lastUpdated === 'string'
+    typeof obj.payFrequencies === 'object' && obj.payFrequencies !== null &&
+    typeof obj.jobStatuses === 'object' && obj.jobStatuses !== null &&
+    typeof obj.userRoles === 'object' && obj.userRoles !== null &&
+    typeof obj.paymentStatuses === 'object' && obj.paymentStatuses !== null &&
+    typeof obj.lastUpdated === 'string'
   );
 }
 

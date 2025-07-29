@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
-import { collection, query, orderBy, limit, getDocs, doc, updateDoc, where, addDoc } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, where, addDoc } from 'firebase/firestore';
 import { z } from 'zod';
 
 // Schema for user query parameters
@@ -11,11 +11,11 @@ const UserQuerySchema = z.object({
   search: z.string().optional(),
 });
 
-// Schema for user status update
-const UpdateUserStatusSchema = z.object({
-  status: z.enum(['active', 'inactive', 'suspended']),
-  reason: z.string().optional(),
-});
+// Schema for user status update (used in PATCH route)
+// const UpdateUserStatusSchema = z.object({
+//   status: z.enum(['active', 'inactive', 'suspended']),
+//   reason: z.string().optional(),
+// });
 
 // Schema for creating a new user
 const CreateUserSchema = z.object({
@@ -36,65 +36,65 @@ export async function GET(request: NextRequest) {
     // Validate query parameters
     const validatedParams = UserQuerySchema.parse(params);
     
-    let users: any[] = [];
+    let users: Record<string, unknown>[] = [];
     
     // Get users based on type
     const userTypes = validatedParams.type ? [validatedParams.type] : ['worker', 'household', 'admin'];
     
     for (const userType of userTypes) {
       const collectionName = userType === 'admin' ? 'admins' : userType;
-      let queryConstraints: any[] = [orderBy('createdAt', 'desc')];
-      
+      const queryConstraints: import('firebase/firestore').QueryConstraint[] = [orderBy('createdAt', 'desc')];
       if (validatedParams.status) {
         queryConstraints.unshift(where('status', '==', validatedParams.status));
       }
-      
       if (validatedParams.limit) {
         queryConstraints.push(limit(validatedParams.limit));
       }
-      
       const q = query(collection(db, collectionName), ...queryConstraints);
       const querySnapshot = await getDocs(q);
-      
       const typeUsers = querySnapshot.docs.map(doc => {
-        const data = doc.data();
+        const data = doc.data() ?? {};
         return {
           id: doc.id,
           userType: userType,
-          fullName: data.fullName || 'N/A',
-          email: data.email || 'N/A',
-          phone: data.phone || 'N/A',
-          status: data.status || 'active',
+          fullName: typeof data.fullName === 'string' ? data.fullName : 'N/A',
+          email: typeof data.email === 'string' ? data.email : 'N/A',
+          phone: typeof data.phone === 'string' ? data.phone : 'N/A',
+          status: typeof data.status === 'string' ? data.status : 'active',
           createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
           lastActive: data.lastActive?.toDate?.()?.toISOString() || null,
           // Type-specific fields
           ...(userType === 'worker' && {
-            services: data.services || [],
-            rating: data.rating || 0,
-            completedJobs: data.completedJobs || 0,
+            services: Array.isArray(data.services) ? data.services : [],
+            rating: typeof data.rating === 'number' ? data.rating : 0,
+            completedJobs: typeof data.completedJobs === 'number' ? data.completedJobs : 0,
           }),
           ...(userType === 'household' && {
-            activeJobs: data.activeJobs || 0,
-            totalSpent: data.totalSpent || 0,
+            activeJobs: typeof data.activeJobs === 'number' ? data.activeJobs : 0,
+            totalSpent: typeof data.totalSpent === 'number' ? data.totalSpent : 0,
           }),
           ...(userType === 'admin' && {
-            role: data.role || 'support_agent',
-            department: data.department || 'N/A',
+            role: typeof data.role === 'string' ? data.role : 'support_agent',
+            department: typeof data.department === 'string' ? data.department : 'N/A',
           }),
         };
       });
-      
       users = users.concat(typeUsers);
     }
     
     // Filter by search term if provided
     if (validatedParams.search) {
       const searchTerm = validatedParams.search.toLowerCase();
-      users = users.filter(user => 
-        user.fullName.toLowerCase().includes(searchTerm) ||
-        user.email.toLowerCase().includes(searchTerm) ||
-        user.phone.includes(searchTerm)
-      );
+      users = users.filter(user => {
+        const fullName = typeof user.fullName === 'string' ? user.fullName : '';
+        const email = typeof user.email === 'string' ? user.email : '';
+        const phone = typeof user.phone === 'string' ? user.phone : '';
+        return (
+          fullName.toLowerCase().includes(searchTerm) ||
+          email.toLowerCase().includes(searchTerm) ||
+          phone.includes(searchTerm)
+        );
+      });
     }
     
     // Calculate user statistics
@@ -165,6 +165,7 @@ export async function POST(request: NextRequest) {
       message: 'User created successfully',
     });
   } catch (error) {
+    // error is intentionally unused except for logging
     console.error('Error creating user:', error);
 
     if (error instanceof z.ZodError) {

@@ -74,16 +74,27 @@ export default function WorkerSchedulePage() {
     const [showCancel, setShowCancel] = React.useState(false);
 
     React.useEffect(() => {
-        function handleShowDetails(e: any) { setSelectedJob(e.detail); }
-        function handleReschedule(e: any) { setSelectedJob(e.detail); setShowReschedule(true); }
-        function handleCancel(e: any) { setSelectedJob(e.detail); setShowCancel(true); }
-        window.addEventListener('showJobDetails', handleShowDetails);
-        window.addEventListener('rescheduleJob', handleReschedule);
-        window.addEventListener('cancelJob', handleCancel);
+        function handleShowDetails(e: Event) {
+            const customEvent = e as CustomEvent;
+            setSelectedJob(customEvent.detail);
+        }
+        function handleReschedule(e: Event) {
+            const customEvent = e as CustomEvent;
+            setSelectedJob(customEvent.detail);
+            setShowReschedule(true);
+        }
+        function handleCancel(e: Event) {
+            const customEvent = e as CustomEvent;
+            setSelectedJob(customEvent.detail);
+            setShowCancel(true);
+        }
+        window.addEventListener('showJobDetails', handleShowDetails as EventListener);
+        window.addEventListener('rescheduleJob', handleReschedule as EventListener);
+        window.addEventListener('cancelJob', handleCancel as EventListener);
         return () => {
-            window.removeEventListener('showJobDetails', handleShowDetails);
-            window.removeEventListener('rescheduleJob', handleReschedule);
-            window.removeEventListener('cancelJob', handleCancel);
+            window.removeEventListener('showJobDetails', handleShowDetails as EventListener);
+            window.removeEventListener('rescheduleJob', handleReschedule as EventListener);
+            window.removeEventListener('cancelJob', handleCancel as EventListener);
         };
     }, []);
 
@@ -113,7 +124,7 @@ export default function WorkerSchedulePage() {
                         };
                     });
                     setSchedule(scheduledJobs);
-                } catch (error) {
+                } catch {
                     toast({ 
                         variant: "destructive", 
                         title: "Error", 

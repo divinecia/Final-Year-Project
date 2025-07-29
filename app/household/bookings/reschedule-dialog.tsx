@@ -86,6 +86,7 @@ export function RescheduleDialog({
       toast({
         variant: "destructive",
         title: "Error", 
+        // error is intentionally unused
         description: "Failed to reschedule booking. Please try again."
       })
     } finally {

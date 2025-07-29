@@ -41,7 +41,7 @@ export function PerformanceMonitor() {
 
     // Memory usage monitor (Chrome only)
     const checkMemory = () => {
-      const perf = performance as any;
+      const perf = performance as Performance & { memory?: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number } };
       if (perf.memory) {
         const { usedJSHeapSize, totalJSHeapSize, jsHeapSizeLimit } = perf.memory;
         console.log('Memory Usage:', {

@@ -1,8 +1,7 @@
-
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, Timestamp, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import * as z from "zod";
 
@@ -19,11 +18,37 @@ export const packageSchema = z.object({
 export type ServicePackage = z.infer<typeof packageSchema> & { id: string, createdAt?: string };
 export type ServicePackageFormData = z.infer<typeof packageSchema>;
 
+function formatPackage(doc: QueryDocumentSnapshot<DocumentData>): ServicePackage {
+  const data = doc.data() as {
+    name: string;
+    price: number;
+    billingCycle: 'one-time' | 'weekly' | 'monthly';
+    description: string;
+    services: string[];
+    status: 'active' | 'archived';
+    createdAt?: Timestamp;
+  };
+  const createdAt = data.createdAt;
+  return {
+    id: doc.id,
+    name: data.name,
+    price: data.price,
+    billingCycle: data.billingCycle,
+    description: data.description,
+    services: data.services,
+    status: data.status,
+    createdAt: createdAt ? createdAt.toDate().toLocaleDateString() : undefined,
+  };
+}
 
 export async function createPackage(data: ServicePackageFormData) {
+  const parse = packageSchema.safeParse(data);
+  if (!parse.success) {
+    return { success: false, error: parse.error.flatten().fieldErrors };
+  }
   try {
     const packageData = {
-      ...data,
+      ...parse.data,
       createdAt: Timestamp.now(),
       status: 'active'
     };
@@ -37,39 +62,30 @@ export async function createPackage(data: ServicePackageFormData) {
 }
 
 export async function getPackages(): Promise<ServicePackage[]> {
-    try {
-        const packagesCollection = collection(db, 'servicePackages');
-        const q = query(packagesCollection, orderBy('createdAt', 'desc'));
-        const querySnapshot = await getDocs(q);
+  try {
+    const packagesCollection = collection(db, 'servicePackages');
+    const q = query(packagesCollection, orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(q);
 
-        if (querySnapshot.empty) {
-            return [];
-        }
-
-        return querySnapshot.docs.map(doc => {
-            const data = doc.data();
-            const createdAt = data.createdAt as Timestamp;
-            return {
-                id: doc.id,
-                name: data.name,
-                price: data.price,
-                billingCycle: data.billingCycle,
-                description: data.description,
-                services: data.services,
-                status: data.status,
-                createdAt: createdAt?.toDate().toLocaleDateString() || new Date().toLocaleDateString(),
-            } as ServicePackage;
-        });
-    } catch (error) {
-        console.error("Error fetching packages: ", error);
-        return [];
+    if (querySnapshot.empty) {
+      return [];
     }
+
+    return querySnapshot.docs.map(formatPackage);
+  } catch (error) {
+    console.error("Error fetching packages: ", error);
+    return [];
+  }
 }
 
 export async function updatePackage(packageId: string, data: ServicePackageFormData) {
+  const parse = packageSchema.safeParse(data);
+  if (!parse.success) {
+    return { success: false, error: parse.error.flatten().fieldErrors };
+  }
   try {
     const packageRef = doc(db, 'servicePackages', packageId);
-    await updateDoc(packageRef, data);
+    await updateDoc(packageRef, parse.data);
     revalidatePath('/admin/packages');
     return { success: true };
   } catch (error) {

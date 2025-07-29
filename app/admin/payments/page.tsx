@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -27,10 +26,20 @@ const SkeletonRow = () => (
     </TableRow>
 )
 
+function formatCurrency(amount: number) {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'RWF', minimumFractionDigits: 0 }).format(amount).replace('RWF', 'RWF ');
+}
+
+function formatDate(date: string) {
+    return new Intl.DateTimeFormat('en-GB', { year: 'numeric', month: 'short', day: '2-digit' }).format(new Date(date));
+}
+
 export default function AdminPaymentsPage() {
     const [servicePayments, setServicePayments] = React.useState<ServicePayment[]>([]);
     const [trainingPayments, setTrainingPayments] = React.useState<TrainingPayment[]>([]);
     const [loading, setLoading] = React.useState(true);
+    const [serviceSearch, setServiceSearch] = React.useState("");
+    const [trainingSearch, setTrainingSearch] = React.useState("");
     const { toast } = useToast();
 
     React.useEffect(() => {
@@ -52,11 +61,18 @@ export default function AdminPaymentsPage() {
         fetchPayments();
     }, [toast]);
 
+    // Filtered data based on search
+    const filteredServicePayments = servicePayments.filter(p =>
+        p.householdName.toLowerCase().includes(serviceSearch.toLowerCase()) ||
+        p.workerName.toLowerCase().includes(serviceSearch.toLowerCase()) ||
+        p.date.includes(serviceSearch)
+    );
 
-    
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'RWF', minimumFractionDigits: 0 }).format(amount).replace('RWF', 'RWF ');
-    };
+    const filteredTrainingPayments = trainingPayments.filter(p =>
+        p.workerName.toLowerCase().includes(trainingSearch.toLowerCase()) ||
+        p.courseTitle.toLowerCase().includes(trainingSearch.toLowerCase()) ||
+        p.date.includes(trainingSearch)
+    );
 
     return (
         <div className="space-y-6">
@@ -65,12 +81,11 @@ export default function AdminPaymentsPage() {
                     <h1 className="text-3xl font-bold tracking-tight">Payment Transactions</h1>
                     <p className="text-muted-foreground">View and manage all financial transactions.</p>
                 </div>
-                 <Button>
+                <Button disabled={loading} aria-disabled={loading}>
                     <FileDown className="mr-2 h-4 w-4" />
                     Export View
                 </Button>
             </div>
-            
             <Tabs defaultValue="service_payments">
                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="service_payments">Service Payments</TabsTrigger>
@@ -85,10 +100,16 @@ export default function AdminPaymentsPage() {
                                     <CardDescription>Transactions from households for worker services.</CardDescription>
                                 </div>
                                 <div className="w-full max-w-sm">
-                                <div className="relative">
+                                    <div className="relative">
                                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                        <Input placeholder="Search service payments..." className="pl-8" />
-                                </div>
+                                        <Input
+                                            placeholder="Search service payments..."
+                                            className="pl-8"
+                                            value={serviceSearch}
+                                            onChange={e => setServiceSearch(e.target.value)}
+                                            aria-label="Search service payments"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </CardHeader>
@@ -106,25 +127,35 @@ export default function AdminPaymentsPage() {
                                 </TableHeader>
                                 <TableBody>
                                     {loading ? Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />) :
-                                     servicePayments.length > 0 ? (
-                                        servicePayments.map((p) => (
-                                            <TableRow key={p.id}>
-                                                <TableCell>{p.date}</TableCell>
-                                                <TableCell className="font-medium">{p.householdName}</TableCell>
-                                                <TableCell>{p.workerName}</TableCell>
-                                                <TableCell>{formatCurrency(p.amount)}</TableCell>
-                                                <TableCell><StatusBadge statusId={p.status} type="payment" /></TableCell>
-                                                <TableCell>
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                                                        <DropdownMenuContent><DropdownMenuItem><Eye className="mr-2 h-4 w-4" /> View Details</DropdownMenuItem></DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </TableCell>
+                                        filteredServicePayments.length > 0 ? (
+                                            filteredServicePayments.map((p) => (
+                                                <TableRow key={p.id}>
+                                                    <TableCell>{formatDate(p.date)}</TableCell>
+                                                    <TableCell className="font-medium">{p.householdName}</TableCell>
+                                                    <TableCell>{p.workerName}</TableCell>
+                                                    <TableCell>{formatCurrency(p.amount)}</TableCell>
+                                                    <TableCell><StatusBadge statusId={p.status} type="payment" /></TableCell>
+                                                    <TableCell>
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button variant="ghost" size="icon" aria-label="More actions">
+                                                                    <MoreHorizontal className="h-4 w-4" />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent>
+                                                                <DropdownMenuItem>
+                                                                    <Eye className="mr-2 h-4 w-4" /> View Details
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        ) : (
+                                            <TableRow>
+                                                <TableCell colSpan={6} className="h-24 text-center">No service payments found.</TableCell>
                                             </TableRow>
-                                        ))
-                                     ) : (
-                                        <TableRow><TableCell colSpan={6} className="h-24 text-center">No service payments found.</TableCell></TableRow>
-                                     )}
+                                        )}
                                 </TableBody>
                             </Table>
                         </CardContent>
@@ -132,17 +163,23 @@ export default function AdminPaymentsPage() {
                 </TabsContent>
                 <TabsContent value="training_payments">
                     <Card>
-                         <CardHeader>
+                        <CardHeader>
                             <div className="flex items-center justify-between">
                                 <div>
                                     <CardTitle>Worker Training Payments</CardTitle>
                                     <CardDescription>Transactions from workers for training programs.</CardDescription>
                                 </div>
                                 <div className="w-full max-w-sm">
-                                <div className="relative">
+                                    <div className="relative">
                                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                        <Input placeholder="Search training payments..." className="pl-8" />
-                                </div>
+                                        <Input
+                                            placeholder="Search training payments..."
+                                            className="pl-8"
+                                            value={trainingSearch}
+                                            onChange={e => setTrainingSearch(e.target.value)}
+                                            aria-label="Search training payments"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </CardHeader>
@@ -160,25 +197,35 @@ export default function AdminPaymentsPage() {
                                 </TableHeader>
                                 <TableBody>
                                     {loading ? Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />) :
-                                     trainingPayments.length > 0 ? (
-                                        trainingPayments.map((p) => (
-                                            <TableRow key={p.id}>
-                                                <TableCell>{p.date}</TableCell>
-                                                <TableCell className="font-medium">{p.workerName}</TableCell>
-                                                <TableCell>{p.courseTitle}</TableCell>
-                                                <TableCell>{formatCurrency(p.amount)}</TableCell>
-                                                <TableCell><StatusBadge statusId={p.status} type="payment" /></TableCell>
-                                                <TableCell>
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                                                        <DropdownMenuContent><DropdownMenuItem><Eye className="mr-2 h-4 w-4" /> View Details</DropdownMenuItem></DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </TableCell>
+                                        filteredTrainingPayments.length > 0 ? (
+                                            filteredTrainingPayments.map((p) => (
+                                                <TableRow key={p.id}>
+                                                    <TableCell>{formatDate(p.date)}</TableCell>
+                                                    <TableCell className="font-medium">{p.workerName}</TableCell>
+                                                    <TableCell>{p.courseTitle}</TableCell>
+                                                    <TableCell>{formatCurrency(p.amount)}</TableCell>
+                                                    <TableCell><StatusBadge statusId={p.status} type="payment" /></TableCell>
+                                                    <TableCell>
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button variant="ghost" size="icon" aria-label="More actions">
+                                                                    <MoreHorizontal className="h-4 w-4" />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent>
+                                                                <DropdownMenuItem>
+                                                                    <Eye className="mr-2 h-4 w-4" /> View Details
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        ) : (
+                                            <TableRow>
+                                                <TableCell colSpan={6} className="h-24 text-center">No training payments found.</TableCell>
                                             </TableRow>
-                                        ))
-                                     ) : (
-                                        <TableRow><TableCell colSpan={6} className="h-24 text-center">No training payments found.</TableCell></TableRow>
-                                     )}
+                                        )}
                                 </TableBody>
                             </Table>
                         </CardContent>

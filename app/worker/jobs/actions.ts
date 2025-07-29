@@ -78,7 +78,7 @@ export async function applyForJob(jobId: string, workerId: string, coverLetter?:
         
         // Check if worker already applied
         const existingApplicants = jobData.applicants || [];
-        const hasApplied = existingApplicants.some((app: any) => app.workerId === workerId);
+        const hasApplied = existingApplicants.some((app: { workerId: string }) => app.workerId === workerId);
         
         if (hasApplied) {
             return { success: false, error: "You have already applied for this job." };

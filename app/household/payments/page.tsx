@@ -3,17 +3,17 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+// import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { TicketPercent, Info, CreditCard, Smartphone, X } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+// import { TicketPercent, Info, CreditCard, Smartphone, X } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/hooks/use-toast"
 import { 
@@ -44,12 +44,12 @@ const HistorySkeletonRow = () => (
 export default function PaymentsPage() {
     const { user } = useAuth();
     const { toast } = useToast();
-    const router = useRouter();
+    // const router = useRouter();
     
     // State management
     const [history, setHistory] = React.useState<Payment[]>([]);
     const [pendingBills, setPendingBills] = React.useState<PendingBill[]>([]);
-    const [paymentMethods, setPaymentMethods] = React.useState<any[]>([]);
+    const [paymentMethods, setPaymentMethods] = React.useState<Record<string, unknown>[]>([]);
     const [loadingHistory, setLoadingHistory] = React.useState(true);
     const [loadingBills, setLoadingBills] = React.useState(true);
     const [isProcessing, setIsProcessing] = React.useState(false);
@@ -75,6 +75,7 @@ export default function PaymentsPage() {
                 setPaymentMethods(methods);
             } catch (error) {
                 toast({ 
+                // error is intentionally unused
                     variant: "destructive", 
                     title: "Error", 
                     description: "Could not load payment data." 

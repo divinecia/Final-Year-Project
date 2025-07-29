@@ -1,10 +1,18 @@
-
 'use server';
 
-// Prefer relative import for better portability and editor support
-
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, orderBy, limit, where, getCountFromServer, Timestamp } from 'firebase/firestore';
+import {
+    collection,
+    getDocs,
+    query,
+    orderBy,
+    limit,
+    where,
+    getCountFromServer,
+    Timestamp,
+    QueryDocumentSnapshot,
+    DocumentData,
+} from 'firebase/firestore';
 import type { Job } from '../jobs/actions';
 import type { Worker } from '../workers/workermanage/actions';
 
@@ -12,15 +20,14 @@ import type { Worker } from '../workers/workermanage/actions';
 function formatDate(date: Timestamp | Date | undefined): string {
     if (!date) return '';
     if (date instanceof Timestamp) {
-        return date.toDate().toLocaleDateString();
+        return date.toDate().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
     }
     if (date instanceof Date) {
-        return date.toLocaleDateString();
+        return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
     }
+    // Fallback for unexpected types
     return '';
 }
-
-
 
 export type DashboardStats = {
     totalWorkers: number;
@@ -28,7 +35,6 @@ export type DashboardStats = {
     jobsCompleted: number;
     totalRevenue: number;
 };
-
 
 /**
  * Fetches dashboard statistics for admin overview.
@@ -56,7 +62,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
             }, 0);
         } catch (error) {
             // Fallback to estimated revenue if payments collection is empty or error
-            totalRevenue = completedJobsSnap.data().count * 25000; // Average job value
+            totalRevenue = (completedJobsSnap.data().count ?? 0) * 25000; // Average job value
             console.warn("Falling back to estimated revenue:", error);
         }
 
@@ -72,6 +78,20 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     }
 }
 
+/**
+ * Helper to safely map Firestore worker document to Worker type.
+ */
+function mapWorkerDoc(doc: QueryDocumentSnapshot<DocumentData>): Worker {
+    const data = doc.data();
+    return {
+        id: doc.id,
+        fullName: data.fullName ?? '',
+        email: data.email ?? '',
+        phone: data.phone ?? '',
+        status: data.status ?? 'pending',
+        dateJoined: formatDate(data.dateJoined),
+    } as Worker;
+}
 
 /**
  * Fetches the 5 most recent worker registrations.
@@ -87,23 +107,28 @@ export async function getRecentWorkerRegistrations(): Promise<Worker[]> {
             return [];
         }
 
-        return querySnapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-                id: doc.id,
-                fullName: data.fullName || '',
-                email: data.email || '',
-                phone: data.phone || '',
-                status: data.status || 'pending',
-                dateJoined: formatDate(data.dateJoined),
-            } as Worker;
-        });
+        return querySnapshot.docs.map(mapWorkerDoc);
     } catch (error) {
         console.error("Error fetching recent workers:", error);
         return [];
     }
 }
 
+/**
+ * Helper to safely map Firestore job document to Job type.
+ */
+function mapJobDoc(doc: QueryDocumentSnapshot<DocumentData>): Job {
+    const data = doc.data();
+    return {
+        id: doc.id,
+        jobTitle: data.jobTitle ?? 'N/A',
+        householdName: data.householdName ?? 'N/A',
+        workerName: data.workerName ?? null,
+        serviceType: data.serviceType ?? 'N/A',
+        status: data.status ?? 'open',
+        createdAt: formatDate(data.createdAt),
+    } as Job;
+}
 
 /**
  * Fetches the 5 most recent job postings.
@@ -119,18 +144,7 @@ export async function getRecentJobPostings(): Promise<Job[]> {
             return [];
         }
 
-        return querySnapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-                id: doc.id,
-                jobTitle: data.jobTitle || 'N/A',
-                householdName: data.householdName || 'N/A',
-                workerName: data.workerName || null,
-                serviceType: data.serviceType || 'N/A',
-                status: data.status || 'open',
-                createdAt: formatDate(data.createdAt),
-            } as Job;
-        });
+        return querySnapshot.docs.map(mapJobDoc);
     } catch (error) {
         console.error("Error fetching recent jobs:", error);
         return [];

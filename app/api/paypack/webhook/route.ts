@@ -1,7 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, updateDoc, doc, addDoc, Timestamp, getDoc } from 'firebase/firestore';
+import { collection, updateDoc, doc, addDoc, Timestamp, getDoc } from 'firebase/firestore';
 
 // Helper function to create a notification
 async function createNotification(userId: string, title: string, description: string) {

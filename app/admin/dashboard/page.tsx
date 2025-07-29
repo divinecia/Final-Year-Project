@@ -1,6 +1,4 @@
-
 "use client";
-
 
 import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,7 +44,7 @@ const WorkerSkeletonRow: React.FC = () => (
 );
 
 const JobSkeletonRow: React.FC = () => (
-  <div className="flex justify-between items-center">
+  <div className="flex justify-between items-center py-2">
     <div>
       <Skeleton className="h-5 w-40 mb-1" />
       <Skeleton className="h-4 w-32" />
@@ -56,9 +54,15 @@ const JobSkeletonRow: React.FC = () => (
 );
 
 // Memoized skeleton arrays for performance
-const useSkeletonRows = (Component: React.FC, count: number) =>
-  React.useMemo(() => Array.from({ length: count }).map((_, i) => <Component key={i} />), [Component, count]);
+function useSkeletonRows(Component: React.FC, count: number) {
+  return React.useMemo(() => Array.from({ length: count }).map((_, i) => <Component key={i} />), [Component, count]);
+}
 
+// Helper to format date
+function formatDate(dateString: string) {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+}
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = React.useState<DashboardStats | null>(null);
@@ -74,6 +78,7 @@ export default function AdminDashboardPage() {
 
   // Fetch dashboard data
   React.useEffect(() => {
+    let isMounted = true;
     const fetchData = async () => {
       setLoading(true);
       try {
@@ -82,9 +87,11 @@ export default function AdminDashboardPage() {
           getRecentWorkerRegistrations(),
           getRecentJobPostings(),
         ]);
-        setStats(statsData);
-        setRecentWorkers(workersData);
-        setRecentJobs(jobsData);
+        if (isMounted) {
+          setStats(statsData);
+          setRecentWorkers(workersData);
+          setRecentJobs(jobsData);
+        }
       } catch (error) {
         console.error("Failed to load dashboard data:", error);
         toast({
@@ -93,11 +100,11 @@ export default function AdminDashboardPage() {
           description: "Failed to load dashboard data."
         });
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
     fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => { isMounted = false; };
   }, [toast]);
 
   // Memoized skeletons for performance
@@ -107,12 +114,9 @@ export default function AdminDashboardPage() {
   // Helper for empty state
   const renderEmpty = (message: string, colSpan = 1) => (
     <TableRow>
-      <TableCell colSpan={colSpan} className="h-24 text-center">{message}</TableCell>
+      <TableCell colSpan={colSpan} className="h-24 text-center text-muted-foreground">{message}</TableCell>
     </TableRow>
   );
-
-  // Dashboard-level loading spinner (optional, can be replaced with your own spinner)
-  // const Spinner = () => <div className="flex justify-center items-center h-32"><span className="loader" /></div>;
 
   return (
     <div className="space-y-6">
@@ -171,7 +175,7 @@ export default function AdminDashboardPage() {
                       <TableRow key={worker.id}>
                         <TableCell className="font-medium">{worker.fullName}</TableCell>
                         <TableCell>{worker.email}</TableCell>
-                        <TableCell>{worker.dateJoined}</TableCell>
+                        <TableCell>{formatDate(worker.dateJoined)}</TableCell>
                       </TableRow>
                     ))
                   : renderEmpty("No recent registrations.", 3)}
@@ -191,7 +195,7 @@ export default function AdminDashboardPage() {
                 ? jobSkeletons
                 : recentJobs.length > 0
                 ? recentJobs.map(job => (
-                    <div key={job.id} className="flex justify-between items-center">
+                    <div key={job.id} className="flex justify-between items-center py-2">
                       <div>
                         <p className="font-medium">{job.jobTitle}</p>
                         <p className="text-sm text-muted-foreground">{job.householdName}</p>

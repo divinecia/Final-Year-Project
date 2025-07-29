@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Build query
-    const queryConstraints: any[] = [
+    const queryConstraints: import('firebase/firestore').QueryConstraint[] = [
       where('conversationId', '==', conversationId),
       orderBy('createdAt', 'desc'),
       limit(validatedParams.limit)

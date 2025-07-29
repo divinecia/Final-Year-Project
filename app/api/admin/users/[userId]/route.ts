@@ -98,7 +98,7 @@ export async function PUT(
     const currentData = userSnap.data();
     
     // Update user status
-    const updateData: any = {
+    const updateData: { [key: string]: any } = {
       status: validatedData.status,
       updatedAt: Timestamp.now(),
     };

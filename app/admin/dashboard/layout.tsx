@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -32,6 +31,38 @@ import { usePathname, useRouter } from "next/navigation"
 import { signOut } from "@/lib/auth"
 import { useToast } from "@/hooks/use-toast"
 
+type MenuItem = {
+  href: string
+  icon: React.ReactNode
+  label: string
+  exact?: boolean
+}
+
+const menuItems: MenuItem[] = [
+  { href: "/admin/dashboard", icon: <Home />, label: "Dashboard", exact: true },
+  { href: "/admin/workers/workermanage", icon: <Users />, label: "Workers" },
+  { href: "/admin/households", icon: <Users />, label: "Households" },
+  { href: "/admin/jobs", icon: <Briefcase />, label: "Jobs" },
+  { href: "/admin/training", icon: <GraduationCap />, label: "Training" },
+  { href: "/admin/packages", icon: <Package />, label: "Service Packages" },
+  { href: "/admin/payments", icon: <Wallet />, label: "Payments" },
+  { href: "/admin/reports", icon: <AreaChart />, label: "Reports" },
+]
+
+const settingsItems: MenuItem[] = [
+  { href: "/admin/settings", icon: <Settings />, label: "Settings", exact: true },
+]
+
+const user = {
+  name: "Admin User",
+  email: "admin@househelp.app",
+  avatar: "https://placehold.co/100x100.png"
+}
+
+function getInitials(name: string) {
+  return name.split(" ").map(n => n[0]).join("").toUpperCase()
+}
+
 function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -46,20 +77,25 @@ function AdminSidebar() {
     router.push("/admin/login");
   };
 
-  const menuItems = [
-    { href: "/admin/dashboard", icon: <Home />, label: "Dashboard" },
-    { href: "/admin/workers/workermanage", icon: <Users />, label: "Workers" },
-    { href: "/admin/households", icon: <Users />, label: "Households" },
-    { href: "/admin/jobs", icon: <Briefcase />, label: "Jobs" },
-    { href: "/admin/training", icon: <GraduationCap />, label: "Training" },
-    { href: "/admin/packages", icon: <Package />, label: "Service Packages" },
-    { href: "/admin/payments", icon: <Wallet />, label: "Payments" },
-    { href: "/admin/reports", icon: <AreaChart />, label: "Reports" },
-  ]
-
-  const settingsItems = [
-     { href: "/admin/settings", icon: <Settings />, label: "Settings" },
-  ]
+  const renderMenuItems = (items: MenuItem[]) =>
+    items.map((item) => (
+      <SidebarMenuItem key={item.href}>
+        <SidebarMenuButton
+          asChild
+          isActive={
+            item.exact
+              ? pathname === item.href
+              : pathname.startsWith(item.href)
+          }
+          aria-label={item.label}
+        >
+          <Link href={item.href}>
+            {item.icon}
+            {item.label}
+          </Link>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    ))
 
   return (
     <Sidebar
@@ -70,38 +106,20 @@ function AdminSidebar() {
       <SidebarHeader>
         <div className="flex w-full items-center justify-between">
           <LogoWithName />
-          <SidebarTrigger className="hidden md:flex" />
+          <SidebarTrigger className="hidden md:flex" aria-label="Toggle sidebar" />
         </div>
       </SidebarHeader>
       <SidebarContent className="p-2">
         <SidebarMenu>
-          {menuItems.map((item) => (
-             <SidebarMenuItem key={item.href}>
-              <SidebarMenuButton asChild isActive={pathname.startsWith(item.href)}>
-                <Link href={item.href}>
-                  {item.icon}
-                  {item.label}
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
+          {renderMenuItems(menuItems)}
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="p-2">
         <SidebarGroup>
           <SidebarMenu>
-             {settingsItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton asChild isActive={pathname === item.href}>
-                        <Link href={item.href}>
-                            {item.icon}
-                            {item.label}
-                        </Link>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-            ))}
+            {renderMenuItems(settingsItems)}
             <SidebarMenuItem>
-              <SidebarMenuButton onClick={handleLogout}>
+              <SidebarMenuButton onClick={handleLogout} aria-label="Logout">
                 <LogOut />
                 Logout
               </SidebarMenuButton>
@@ -110,19 +128,18 @@ function AdminSidebar() {
         </SidebarGroup>
         <div className="flex items-center gap-3 p-3 rounded-lg bg-background/70">
           <Avatar className="h-10 w-10">
-            <AvatarImage src="https://placehold.co/100x100.png" />
-            <AvatarFallback>AD</AvatarFallback>
+            <AvatarImage src={user.avatar} alt={user.name} />
+            <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
           </Avatar>
           <div>
-            <p className="font-semibold">Admin User</p>
-            <p className="text-xs text-muted-foreground">admin@househelp.app</p>
+            <p className="font-semibold">{user.name}</p>
+            <p className="text-xs text-muted-foreground">{user.email}</p>
           </div>
         </div>
       </SidebarFooter>
     </Sidebar>
   )
 }
-
 
 export default function DashboardLayout({
   children,
@@ -131,15 +148,15 @@ export default function DashboardLayout({
 }) {
   return (
     <SidebarProvider>
-        <div className="flex min-h-screen">
-            <AdminSidebar />
-            <main className="flex-1 p-4 md:p-6 lg:p-8 bg-muted/40">
-                <div className="md:hidden mb-4">
-                    <SidebarTrigger/>
-                </div>
-                {children}
-            </main>
-        </div>
+      <div className="flex min-h-screen">
+        <AdminSidebar />
+        <main className="flex-1 p-4 md:p-6 lg:p-8 bg-muted/40">
+          <div className="md:hidden mb-4">
+            <SidebarTrigger aria-label="Open sidebar" />
+          </div>
+          {children}
+        </main>
+      </div>
     </SidebarProvider>
   )
 }

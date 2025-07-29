@@ -1,6 +1,4 @@
-import type { NextRequest } from 'next/server';
-
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Test environment variables server-side
     const config = {
@@ -13,8 +11,8 @@ export async function GET(request: NextRequest) {
     };
 
     const missingVars = Object.entries(config)
-      .filter(([key, value]) => !value)
-      .map(([key]) => key);
+      .filter(([, value]) => !value)
+      .map(([k]) => k);
 
     return Response.json({
       success: true,

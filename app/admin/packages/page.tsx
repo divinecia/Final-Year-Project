@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -29,11 +28,24 @@ const SkeletonRow = () => (
     </TableRow>
 )
 
+const statusBadgeVariant = (status: string) => {
+    switch (status) {
+        case "active":
+            return "default"
+        case "inactive":
+            return "secondary"
+        default:
+            return "outline"
+    }
+}
+
 export default function AdminPackagesPage() {
     const [isFormOpen, setIsFormOpen] = React.useState(false);
     const [selectedPackage, setSelectedPackage] = React.useState<ServicePackage | null>(null);
     const [packages, setPackages] = React.useState<ServicePackage[]>([]);
     const [loading, setLoading] = React.useState(true);
+    const [search, setSearch] = React.useState("");
+    const [deletingId, setDeletingId] = React.useState<string | null>(null);
     const { toast } = useToast();
 
     const fetchPackages = React.useCallback(async () => {
@@ -67,6 +79,7 @@ export default function AdminPackagesPage() {
     };
 
     const handleDelete = async (packageId: string, packageName: string) => {
+        setDeletingId(packageId);
         const result = await deletePackage(packageId);
         if (result.success) {
             toast({
@@ -81,12 +94,22 @@ export default function AdminPackagesPage() {
                 description: `Could not delete package "${packageName}".`
             });
         }
+        setDeletingId(null);
     };
 
-    const getServiceName = (serviceId: string) => {
-        return serviceOptions.find(s => s.id === serviceId)?.label || serviceId;
-    }
-    
+    const getServiceName = React.useCallback(
+        (serviceId: string) => serviceOptions.find(s => s.id === serviceId)?.label || serviceId,
+        []
+    );
+
+    const filteredPackages = React.useMemo(
+        () =>
+            packages.filter(pkg =>
+                pkg.name.toLowerCase().includes(search.toLowerCase())
+            ),
+        [packages, search]
+    );
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -95,11 +118,11 @@ export default function AdminPackagesPage() {
                     <p className="text-muted-foreground">Create and manage service packages for households.</p>
                 </div>
                 <div className="flex space-x-2">
-                    <Button variant="outline">
+                    <Button variant="outline" aria-label="Export package list">
                         <FileDown className="mr-2 h-4 w-4" />
                         Export List
                     </Button>
-                    <Button onClick={handleAdd}>
+                    <Button onClick={handleAdd} aria-label="Add new package">
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Add New Package
                     </Button>
@@ -116,7 +139,13 @@ export default function AdminPackagesPage() {
                         <div className="w-full max-w-sm">
                            <div className="relative">
                                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input placeholder="Search packages..." className="pl-8" />
+                                <Input
+                                    placeholder="Search packages..."
+                                    className="pl-8"
+                                    value={search}
+                                    onChange={e => setSearch(e.target.value)}
+                                    aria-label="Search packages"
+                                />
                            </div>
                         </div>
                     </div>
@@ -136,8 +165,8 @@ export default function AdminPackagesPage() {
                         <TableBody>
                            {loading ? (
                              Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} />)
-                           ) : packages.length > 0 ? (
-                                packages.map((pkg) => (
+                           ) : filteredPackages.length > 0 ? (
+                                filteredPackages.map((pkg) => (
                                     <TableRow key={pkg.id}>
                                         <TableCell className="font-medium">{pkg.name}</TableCell>
                                         <TableCell>{pkg.price.toLocaleString()}</TableCell>
@@ -151,15 +180,19 @@ export default function AdminPackagesPage() {
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant={pkg.status === 'active' ? 'default' : 'outline'} className={pkg.status === 'active' ? 'bg-green-500' : ''}>{pkg.status}</Badge>
+                                            <Badge
+                                                variant={statusBadgeVariant(pkg.status)}
+                                                className={pkg.status === 'active' ? 'bg-green-500 text-white' : ''}
+                                            >
+                                                {pkg.status}
+                                            </Badge>
                                         </TableCell>
                                         <TableCell>
                                             <AlertDialog>
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
-                                                        <Button aria-haspopup="true" size="icon" variant="ghost">
+                                                        <Button aria-haspopup="true" size="icon" variant="ghost" aria-label="Open actions menu">
                                                             <MoreHorizontal className="h-4 w-4" />
-                                                            <span className="sr-only">Toggle menu</span>
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
@@ -169,7 +202,10 @@ export default function AdminPackagesPage() {
                                                         </DropdownMenuItem>
                                                         <DropdownMenuSeparator />
                                                         <AlertDialogTrigger asChild>
-                                                            <DropdownMenuItem className="text-destructive focus:text-destructive">
+                                                            <DropdownMenuItem
+                                                                className="text-destructive focus:text-destructive"
+                                                                disabled={deletingId === pkg.id}
+                                                            >
                                                                 <Trash2 className="mr-2 h-4 w-4" /> Delete
                                                             </DropdownMenuItem>
                                                         </AlertDialogTrigger>
@@ -183,9 +219,12 @@ export default function AdminPackagesPage() {
                                                         </AlertDialogDescription>
                                                     </AlertDialogHeader>
                                                     <AlertDialogFooter>
-                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => handleDelete(pkg.id, pkg.name)}>
-                                                            Yes, delete package
+                                                        <AlertDialogCancel disabled={deletingId === pkg.id}>Cancel</AlertDialogCancel>
+                                                        <AlertDialogAction
+                                                            onClick={() => handleDelete(pkg.id, pkg.name)}
+                                                            disabled={deletingId === pkg.id}
+                                                        >
+                                                            {deletingId === pkg.id ? "Deleting..." : "Yes, delete package"}
                                                         </AlertDialogAction>
                                                     </AlertDialogFooter>
                                                 </AlertDialogContent>

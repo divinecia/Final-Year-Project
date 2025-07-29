@@ -40,8 +40,8 @@ export async function GET(request: NextRequest) {
     const validatedParams = JobQuerySchema.parse(params);
     
     // Build query
-    let jobsQuery = collection(db, 'jobs');
-    const queryConstraints: any[] = [orderBy('createdAt', 'desc')];
+    const jobsQuery = collection(db, 'jobs');
+    const queryConstraints: import('firebase/firestore').QueryConstraint[] = [orderBy('createdAt', 'desc')];
     
     if (validatedParams.status) {
       queryConstraints.unshift(where('status', '==', validatedParams.status));

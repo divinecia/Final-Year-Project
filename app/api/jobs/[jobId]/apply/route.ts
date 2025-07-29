@@ -50,8 +50,8 @@ export async function POST(
     }
     
     // Check if worker already applied
-    const existingApplicants = jobData.applicants || [];
-    const hasApplied = existingApplicants.some((app: any) => app.workerId === validatedData.workerId);
+    const existingApplicants: { workerId: string }[] = jobData.applicants || [];
+    const hasApplied = existingApplicants.some((app) => app.workerId === validatedData.workerId);
     
     if (hasApplied) {
       return NextResponse.json({
@@ -144,9 +144,11 @@ export async function GET(
     const applicants = jobData.applicants || [];
     
     // Format applicants data
-    const formattedApplicants = applicants.map((app: any) => ({
+    const formattedApplicants = applicants.map((app: Record<string, unknown>) => ({
       ...app,
-      appliedAt: app.appliedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+      appliedAt: (typeof app.appliedAt === 'object' && app.appliedAt && 'toDate' in app.appliedAt && typeof (app.appliedAt as any).toDate === 'function')
+        ? (app.appliedAt as any).toDate()?.toISOString() || new Date().toISOString()
+        : new Date().toISOString(),
     }));
     
     return NextResponse.json({

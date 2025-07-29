@@ -97,10 +97,9 @@ export default function WorkerLoginPage() {
                         <p className="text-center text-sm mb-2">Login with:</p>
                         <div className="flex justify-center gap-4">
                           <OAuthButtons
-                            onSuccess={(uid, email) => {
+                            onSuccess={() => {
                               router.push("/worker/dashboard");
                             }}
-                            userType="worker"
                           />
                         </div>
                         <div className="text-center text-xs text-muted-foreground mt-2">or use your email and password below</div>

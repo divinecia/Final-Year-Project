@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Briefcase, CalendarCheck2, Star, Wallet, ArrowRight } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAuth } from "@/hooks/use-auth"
@@ -23,10 +23,22 @@ export default function WorkerDashboardPage() {
     const [stats, setStats] = React.useState<WorkerDashboardStats | null>(null);
     const [jobs, setJobs] = React.useState<Job[]>([]);
     const [loading, setLoading] = React.useState(true);
-    const [notifications, setNotifications] = React.useState<any[]>([]);
+    interface NotificationPreview {
+        id: string;
+        title?: string;
+    }
+    interface MessageRoomPreview {
+        id: string;
+        jobTitle?: string;
+        lastMessage?: string;
+    }
+    interface ReviewSummary {
+        reviews: Array<{ id: string; rating: number; comment: string }>;
+    }
+    const [notifications, setNotifications] = React.useState<NotificationPreview[]>([]);
     const [notificationsLoading, setNotificationsLoading] = React.useState(true);
-    const [messagesPreview, setMessagesPreview] = React.useState<any[]>([]);
-    const [reviewsSummary, setReviewsSummary] = React.useState<any>(null);
+    const [messagesPreview, setMessagesPreview] = React.useState<MessageRoomPreview[]>([]);
+    const [reviewsSummary, setReviewsSummary] = React.useState<ReviewSummary | null>(null);
     const [reviewsLoading, setReviewsLoading] = React.useState(true);
 
     // Rwanda insurance companies (sample)
@@ -86,10 +98,14 @@ export default function WorkerDashboardPage() {
                     setStats(statsData);
                     setJobs(jobsData);
                 } catch (error) {
+                    let message = "Could not load your dashboard data.";
+                    if (error && typeof error === "object" && "message" in error && typeof (error as any).message === "string") {
+                        message = (error as any).message;
+                    }
                     toast({
                         variant: "destructive",
                         title: "Error",
-                        description: "Could not load your dashboard data."
+                        description: message
                     });
                 } finally {
                     setLoading(false);
@@ -202,12 +218,17 @@ export default function WorkerDashboardPage() {
               {notificationsLoading ? (
                 <Skeleton className="h-6 w-32 mb-2" />
               ) : notifications.length > 0 ? (
-                notifications.map((n) => (
-                  <div key={n.id} className="flex items-center gap-2">
-                    <Badge className="bg-primary text-white">{n.title?.includes("job") ? "Job" : n.title?.includes("payment") ? "Payment" : n.title?.includes("message") ? "Message" : "Other"}</Badge>
-                    <span className="text-sm">{n.title || "Notification"}</span>
-                  </div>
-                ))
+                notifications.map((n) => {
+                  // Type guard for notification
+                  if (!n || typeof n !== 'object' || typeof n.id !== 'string') return null;
+                  const title = typeof n.title === 'string' ? n.title : '';
+                  return (
+                    <div key={n.id} className="flex items-center gap-2">
+                      <Badge className="bg-primary text-white">{title.includes("job") ? "Job" : title.includes("payment") ? "Payment" : title.includes("message") ? "Message" : "Other"}</Badge>
+                      <span className="text-sm">{title || "Notification"}</span>
+                    </div>
+                  );
+                })
               ) : (
                 <span className="text-sm text-muted-foreground">No notifications yet.</span>
               )}
@@ -228,12 +249,18 @@ export default function WorkerDashboardPage() {
               {messagesPreview.length === 0 ? (
                 <span className="text-sm text-muted-foreground">No recent messages.</span>
               ) : (
-                messagesPreview.map((room) => (
-                  <div key={room.id} className="flex items-center gap-2">
-                    <Avatar className="h-6 w-6"><AvatarFallback>{room.jobTitle?.charAt(0) || "H"}</AvatarFallback></Avatar>
-                    <span className="text-sm font-medium">{room.lastMessage ? room.lastMessage : room.jobTitle || "Conversation"}</span>
-                  </div>
-                ))
+                messagesPreview.map((room) => {
+                  // Type guard for message room
+                  if (!room || typeof room !== 'object' || typeof room.id !== 'string') return null;
+                  const jobTitle = typeof room.jobTitle === 'string' ? room.jobTitle : '';
+                  const lastMessage = typeof room.lastMessage === 'string' ? room.lastMessage : '';
+                  return (
+                    <div key={room.id} className="flex items-center gap-2">
+                      <Avatar className="h-6 w-6"><AvatarFallback>{jobTitle.charAt(0) || "H"}</AvatarFallback></Avatar>
+                      <span className="text-sm font-medium">{lastMessage ? lastMessage : jobTitle || "Conversation"}</span>
+                    </div>
+                  );
+                })
               )}
             </div>
           </CardContent>
@@ -378,8 +405,8 @@ export default function WorkerDashboardPage() {
             <div className="space-y-2">
               {reviewsLoading ? (
                 <Skeleton className="h-6 w-32 mb-2" />
-              ) : reviewsSummary && reviewsSummary.reviews.length > 0 ? (
-                reviewsSummary.reviews.slice(0, 2).map((review: any) => (
+              ) : reviewsSummary && Array.isArray(reviewsSummary.reviews) && reviewsSummary.reviews.length > 0 ? (
+                reviewsSummary.reviews.slice(0, 2).map((review) => (
                   <div key={review.id} className="flex items-center gap-2">
                     <Star className="h-5 w-5 text-yellow-400" />
                     <span className="font-semibold">{review.rating.toFixed(1)}</span>

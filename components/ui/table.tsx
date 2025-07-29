@@ -65,6 +65,7 @@ const TableRow = React.forwardRef<
   />
 ))
 TableRow.displayName = "TableRow"
+// propTypes are not needed in TypeScript and can be removed
 
 const TableHead = React.forwardRef<
   HTMLTableCellElement,
@@ -79,6 +80,7 @@ const TableHead = React.forwardRef<
     {...props}
   />
 ))
+
 TableHead.displayName = "TableHead"
 
 const TableCell = React.forwardRef<

@@ -7,10 +7,9 @@ interface OAuthButtonsProps {
   onSuccess: (userId: string, email: string) => void;
   onError?: (error: string) => void;
   disabled?: boolean;
-  userType: 'household' | 'worker';
 }
 
-export function OAuthButtons({ onSuccess, onError, disabled = false, userType }: OAuthButtonsProps) {
+export function OAuthButtons({ onSuccess, onError, disabled = false }: OAuthButtonsProps) {
   const { toast } = useToast();
 
   const handleGoogleSignIn = async () => {
@@ -31,8 +30,8 @@ export function OAuthButtons({ onSuccess, onError, disabled = false, userType }:
         });
         onError?.(errorMessage);
       }
-    } catch (error: any) {
-      const errorMessage = `Google sign-in error: ${error.message}`;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? `Google sign-in error: ${error.message}` : 'Google sign-in error';
       toast({
         title: "Google Sign-in Error",
         description: errorMessage,
@@ -60,8 +59,8 @@ export function OAuthButtons({ onSuccess, onError, disabled = false, userType }:
         });
         onError?.(errorMessage);
       }
-    } catch (error: any) {
-      const errorMessage = `GitHub sign-in error: ${error.message}`;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? `GitHub sign-in error: ${error.message}` : 'GitHub sign-in error';
       toast({
         title: "GitHub Sign-in Error",
         description: errorMessage,

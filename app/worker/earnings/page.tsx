@@ -35,7 +35,7 @@ export default function WorkerEarningsPage() {
                 try {
                     const earningsData = await getWorkerEarnings(user.uid);
                     setSummary(earningsData);
-                } catch (e) {
+                } catch {
                     toast({ variant: "destructive", title: "Error", description: "Could not fetch earnings data." });
                 } finally {
                     setLoading(false);

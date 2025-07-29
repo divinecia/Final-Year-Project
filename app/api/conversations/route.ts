@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
           // Try to get user info from worker collection first, then household
           const workerDoc = await getDoc(firestoreDoc(db, 'worker', otherParticipantId));
           if (workerDoc.exists()) {
-            const workerData = workerDoc.data() as any;
+            const workerData = workerDoc.data() as Record<string, unknown>;
             otherParticipant = {
               id: otherParticipantId,
               name: workerData.fullName || 'Worker',
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
           } else {
             const householdDoc = await getDoc(firestoreDoc(db, 'household', otherParticipantId));
             if (householdDoc.exists()) {
-              const householdData = householdDoc.data() as any;
+              const householdData = householdDoc.data() as Record<string, unknown>;
               otherParticipant = {
                 id: otherParticipantId,
                 name: householdData.fullName || 'Household',

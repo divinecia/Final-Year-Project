@@ -31,7 +31,7 @@ export function SearchComponent({ filters, onFiltersChange, onSearch, loading }:
   const [showAdvanced, setShowAdvanced] = React.useState(false)
 
   const updateFilter = React.useCallback(
-    (key: keyof SearchFilters, value: any) => {
+    <K extends keyof SearchFilters>(key: K, value: SearchFilters[K]) => {
       onFiltersChange({ ...filters, [key]: value })
     },
     [filters, onFiltersChange]

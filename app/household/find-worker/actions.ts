@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where, orderBy, Timestamp, limit, documentId } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, limit, documentId } from 'firebase/firestore';
 
 export type Worker = {
     id: string;

@@ -27,7 +27,7 @@ export default function ResetPasswordPage() {
     },
   });
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
+  const onSubmit = () => {
     toast({
       title: "Password Updated",
       description: "Your password has been changed successfully.",

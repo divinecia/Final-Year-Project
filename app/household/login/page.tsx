@@ -97,7 +97,7 @@ export default function HouseholdLoginPage() {
                         <p className="text-center text-sm mb-2">Login with:</p>
                         <div className="flex justify-center gap-4">
                           <OAuthButtons
-                            onSuccess={(uid, email) => {
+                            onSuccess={() => {
                               router.push("/household/dashboard");
                             }}
                             userType="household"

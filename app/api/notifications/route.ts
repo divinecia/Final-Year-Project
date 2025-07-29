@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
-import { collection, query, where, orderBy, limit, getDocs, addDoc, Timestamp, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, getDocs, addDoc, Timestamp } from 'firebase/firestore';
 import { z } from 'zod';
 
 // Schema for notification creation
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     const validatedParams = NotificationQuerySchema.parse(params);
     
     // Build query
-    const queryConstraints: any[] = [
+    const queryConstraints: import('firebase/firestore').QueryConstraint[] = [
       where('userId', '==', validatedParams.userId),
       orderBy('createdAt', 'desc')
     ];
@@ -51,10 +51,10 @@ export async function GET(request: NextRequest) {
     const q = query(collection(db, 'notifications'), ...queryConstraints);
     const querySnapshot = await getDocs(q);
     
-    const notifications = querySnapshot.docs.map(doc => {
-      const data = doc.data();
+    const notifications = querySnapshot.docs.map(docSnapshot => {
+      const data = docSnapshot.data();
       return {
-        id: doc.id,
+        id: docSnapshot.id,
         ...data,
         createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
       };
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
       success: true,
       data: notifications,
       total: notifications.length,
-      unreadCount: notifications.filter((n: any) => !n.read).length,
+      unreadCount: notifications.filter((n: { read?: boolean }) => !n.read).length,
       message: 'Notifications retrieved successfully'
     });
     

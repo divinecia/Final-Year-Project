@@ -100,7 +100,8 @@ export default function FindWorkerPage() {
                 toast({
                     variant: "destructive",
                     title: "Error",
-                    description: "Could not fetch workers.",
+                    description: "Could not fetch workers."
+                    // error is intentionally unused
                 });
             } finally {
                 setLoading(false);

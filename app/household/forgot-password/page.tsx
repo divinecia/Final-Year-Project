@@ -27,7 +27,7 @@ export default function HouseholdForgotPasswordPage() {
         setError(data.error || 'Failed to send reset instructions.');
       }
     } catch (err) {
-      setError('Failed to send reset instructions.');
+      setError('Failed to send reset instructions.'); // err is intentionally unused
     } finally {
       setLoading(false);
     }

@@ -2,9 +2,11 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, doc, getDocs, limit, query, updateDoc, Timestamp, getDoc } from 'firebase/firestore';
-import { revalidatePath } from 'next/cache';
-import { WorkerSettingsSchema, type WorkerSettingsData, type WorkerProfile } from '@/lib/schemas/worker';
+import { doc, getDoc } from 'firebase/firestore';
+
+import type { WorkerProfile, WorkerSettingsData } from '@/lib/schemas/worker';
+import { updateDoc } from './update-doc';
+import { revalidatePath } from './revalidate-path';
 
 
 export async function getWorkerProfile(workerId: string): Promise<WorkerProfile | null> {

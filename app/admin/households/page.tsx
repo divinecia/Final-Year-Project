@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -14,7 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { getHouseholds, deleteHousehold, type Household } from "./actions"
 import { StatusBadge } from "@/components/ui/status-components"
 
-const SkeletonRow = () => (
+const SkeletonRow = React.memo(() => (
     <TableRow>
         <TableCell><Skeleton className="h-5 w-32" /></TableCell>
         <TableCell><Skeleton className="h-5 w-40" /></TableCell>
@@ -25,63 +24,95 @@ const SkeletonRow = () => (
             <Skeleton className="h-8 w-8" />
         </TableCell>
     </TableRow>
-)
+))
 
+SkeletonRow.displayName = "SkeletonRow"
+
+// Utility to format date
+function formatDate(dateString: string) {
+    const date = new Date(dateString)
+    return date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
+}
+
+// Utility to export CSV
+function exportToCSV(households: Household[]) {
+    const headers = ["Full Name", "Email", "Phone", "Status", "Date Joined"]
+    const rows = households.map(h => [
+        `"${h.fullName}"`,
+        `"${h.email}"`,
+        `"${h.phone}"`,
+        `"${h.status}"`,
+        `"${formatDate(h.dateJoined)}"`
+    ])
+    const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n")
+    const blob = new Blob([csvContent], { type: "text/csv" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "households.csv"
+    a.click()
+    URL.revokeObjectURL(url)
+}
 
 export default function AdminHouseholdsPage() {
-    const [households, setHouseholds] = React.useState<Household[]>([]);
-    const [filteredHouseholds, setFilteredHouseholds] = React.useState<Household[]>([]);
-    const [loading, setLoading] = React.useState(true);
-    const [searchTerm, setSearchTerm] = React.useState("");
-    const { toast } = useToast();
+    const [households, setHouseholds] = React.useState<Household[]>([])
+    const [filteredHouseholds, setFilteredHouseholds] = React.useState<Household[]>([])
+    const [loading, setLoading] = React.useState(true)
+    const [searchTerm, setSearchTerm] = React.useState("")
+    const { toast } = useToast()
+
+    // Debounce search input
+    const [debouncedSearch, setDebouncedSearch] = React.useState(searchTerm)
+    React.useEffect(() => {
+        const handler = setTimeout(() => setDebouncedSearch(searchTerm), 300)
+        return () => clearTimeout(handler)
+    }, [searchTerm])
 
     const fetchHouseholds = React.useCallback(async () => {
-        setLoading(true);
+        setLoading(true)
         try {
-            const fetchedHouseholds = await getHouseholds();
-            setHouseholds(fetchedHouseholds);
-            setFilteredHouseholds(fetchedHouseholds);
+            const fetchedHouseholds = await getHouseholds()
+            setHouseholds(fetchedHouseholds)
+            setFilteredHouseholds(fetchedHouseholds)
         } catch {
             toast({
                 variant: "destructive",
                 title: "Error",
                 description: "Could not fetch household data.",
-            });
+            })
         } finally {
-            setLoading(false);
+            setLoading(false)
         }
-    }, [toast]);
+    }, [toast])
 
     React.useEffect(() => {
-        fetchHouseholds();
-    }, [fetchHouseholds]);
+        fetchHouseholds()
+    }, [fetchHouseholds])
 
     React.useEffect(() => {
         const results = households.filter(h =>
-            h.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            h.email.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        setFilteredHouseholds(results);
-    }, [searchTerm, households]);
-
+            h.fullName.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+            h.email.toLowerCase().includes(debouncedSearch.toLowerCase())
+        )
+        setFilteredHouseholds(results)
+    }, [debouncedSearch, households])
 
     const handleDelete = async (householdId: string, householdName: string) => {
-        const result = await deleteHousehold(householdId);
+        const result = await deleteHousehold(householdId)
         if (result.success) {
             toast({
                 title: "Household Deleted",
                 description: `The account for "${householdName}" has been deleted.`
-            });
-            fetchHouseholds();
+            })
+            fetchHouseholds()
         } else {
-             toast({
+            toast({
                 variant: "destructive",
                 title: "Error",
                 description: result.error || `Could not delete account for "${householdName}".`
-            });
+            })
         }
-    };
-
+    }
 
     return (
         <div className="space-y-6">
@@ -90,29 +121,32 @@ export default function AdminHouseholdsPage() {
                     <h1 className="text-3xl font-bold tracking-tight">Manage Households</h1>
                     <p className="text-muted-foreground">View and manage household accounts.</p>
                 </div>
-                <Button>
+                <Button
+                    onClick={() => exportToCSV(filteredHouseholds)}
+                    aria-label="Export household list as CSV"
+                >
                     <FileDown className="mr-2 h-4 w-4" />
                     Export List
                 </Button>
             </div>
-            
             <Card>
                 <CardHeader>
-                     <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between">
                         <div>
                             <CardTitle>Household Accounts</CardTitle>
                             <CardDescription>A list of all registered households in the system.</CardDescription>
                         </div>
                         <div className="w-full max-w-sm">
-                           <div className="relative">
+                            <div className="relative">
                                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input 
-                                    placeholder="Search households..." 
-                                    className="pl-8" 
+                                <Input
+                                    placeholder="Search households..."
+                                    className="pl-8"
                                     value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    onChange={e => setSearchTerm(e.target.value)}
+                                    aria-label="Search households"
                                 />
-                           </div>
+                            </div>
                         </div>
                     </div>
                 </CardHeader>
@@ -129,28 +163,27 @@ export default function AdminHouseholdsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                           {loading ? (
+                            {loading ? (
                                 Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
-                           ) : filteredHouseholds.length > 0 ? (
+                            ) : filteredHouseholds.length > 0 ? (
                                 filteredHouseholds.map((household) => (
                                     <TableRow key={household.id}>
                                         <TableCell className="font-medium">{household.fullName}</TableCell>
                                         <TableCell>{household.email}</TableCell>
                                         <TableCell>{household.phone}</TableCell>
                                         <TableCell><StatusBadge statusId={household.status} type="user" /></TableCell>
-                                        <TableCell>{household.dateJoined}</TableCell>
+                                        <TableCell>{formatDate(household.dateJoined)}</TableCell>
                                         <TableCell>
                                             <AlertDialog>
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
-                                                        <Button aria-haspopup="true" size="icon" variant="ghost">
+                                                        <Button aria-haspopup="true" size="icon" variant="ghost" aria-label="Open actions menu">
                                                             <MoreHorizontal className="h-4 w-4" />
-                                                            <span className="sr-only">Toggle menu</span>
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
                                                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                         <DropdownMenuItem>
+                                                        <DropdownMenuItem>
                                                             <Eye className="mr-2 h-4 w-4" /> View Details
                                                         </DropdownMenuItem>
                                                         <DropdownMenuSeparator />
@@ -179,13 +212,13 @@ export default function AdminHouseholdsPage() {
                                         </TableCell>
                                     </TableRow>
                                 ))
-                           ) : (
+                            ) : (
                                 <TableRow>
                                     <TableCell colSpan={6} className="text-center h-24">
                                         No households found.
                                     </TableCell>
                                 </TableRow>
-                           )}
+                            )}
                         </TableBody>
                     </Table>
                 </CardContent>

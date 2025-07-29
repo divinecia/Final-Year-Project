@@ -21,7 +21,7 @@ export const trainingSchema = z.object({
   duration: z.string().min(1, 'Duration is required.'),
   description: z.string().min(20, 'Description must be at least 20 characters.'),
   status: z.enum(['active', 'archived']).default('active'),
-  // materialUrl: z.string().url().optional(), // For when file upload is implemented
+  // materialUrl: z.string().url().optional(),
 });
 
 export type TrainingProgram = z.infer<typeof trainingSchema> & {
@@ -35,15 +35,20 @@ const ADMIN_TRAINING_PATH = '/admin/training';
 
 function handleError(error: unknown, message: string) {
   console.error(message, error);
-  return { success: false, error: message };
+  return { success: false, error: message, details: error instanceof Error ? error.message : String(error) };
 }
 
 export async function createTraining(data: TrainingFormData) {
   try {
+    // Validate data before proceeding
+    const parsed = trainingSchema.safeParse(data);
+    if (!parsed.success) {
+      return { success: false, error: 'Validation failed', details: parsed.error.flatten() };
+    }
+
     const trainingData = {
-      ...data,
+      ...parsed.data,
       createdAt: Timestamp.now(),
-      status: 'active',
     };
     await addDoc(collection(db, TRAINING_COLLECTION), trainingData);
     revalidatePath(ADMIN_TRAINING_PATH);

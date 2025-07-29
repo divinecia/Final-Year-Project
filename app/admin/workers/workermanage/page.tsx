@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -32,6 +31,7 @@ export default function AdminWorkersManagePage() {
     const [loading, setLoading] = React.useState(true);
     const { toast } = useToast();
     const [refreshKey, setRefreshKey] = React.useState(0);
+    const [search, setSearch] = React.useState("");
 
     const fetchWorkers = React.useCallback(async () => {
         try {
@@ -71,7 +71,7 @@ export default function AdminWorkersManagePage() {
         }
     }
 
-     const handleSuspend = async (workerId: string, workerName: string) => {
+    const handleSuspend = async (workerId: string, workerName: string) => {
         const result = await suspendWorker(workerId);
         if (result.success) {
             toast({
@@ -105,6 +105,16 @@ export default function AdminWorkersManagePage() {
         }
     }
 
+    // Filter workers by search input
+    const filteredWorkers = React.useMemo(() => {
+        if (!search.trim()) return workers;
+        const lower = search.toLowerCase();
+        return workers.filter(w =>
+            w.fullName.toLowerCase().includes(lower) ||
+            w.email.toLowerCase().includes(lower) ||
+            w.phone.toLowerCase().includes(lower)
+        );
+    }, [workers, search]);
 
     return (
         <div className="space-y-6">
@@ -113,7 +123,7 @@ export default function AdminWorkersManagePage() {
                     <h1 className="text-3xl font-bold tracking-tight">Manage Workers</h1>
                     <p className="text-muted-foreground">Approve, monitor, and manage worker accounts and welfare.</p>
                 </div>
-                <Button>
+                <Button disabled={loading} aria-label="Export worker list">
                     <FileDown className="mr-2 h-4 w-4" />
                     Export List
                 </Button>
@@ -127,10 +137,16 @@ export default function AdminWorkersManagePage() {
                             <CardDescription>A list of all registered workers in the system.</CardDescription>
                         </div>
                         <div className="w-full max-w-sm">
-                           <div className="relative">
+                            <div className="relative">
                                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input placeholder="Search workers..." className="pl-8" />
-                           </div>
+                                <Input
+                                    placeholder="Search workers..."
+                                    className="pl-8"
+                                    value={search}
+                                    onChange={e => setSearch(e.target.value)}
+                                    aria-label="Search workers"
+                                />
+                            </div>
                         </div>
                     </div>
                 </CardHeader>
@@ -147,23 +163,26 @@ export default function AdminWorkersManagePage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                           {loading ? (
+                            {loading ? (
                                 Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
-                           ) : workers.length > 0 ? (
-                                workers.map((worker) => (
+                            ) : filteredWorkers.length > 0 ? (
+                                filteredWorkers.map((worker) => (
                                     <TableRow key={worker.id}>
                                         <TableCell className="font-medium">{worker.fullName}</TableCell>
                                         <TableCell>{worker.email}</TableCell>
                                         <TableCell>{worker.phone}</TableCell>
                                         <TableCell><StatusBadge statusId={worker.status} type="user" /></TableCell>
-                                        <TableCell>{worker.dateJoined}</TableCell>
+                                        <TableCell>
+                                            {worker.dateJoined
+                                                ? new Date(worker.dateJoined).toLocaleDateString()
+                                                : "-"}
+                                        </TableCell>
                                         <TableCell>
                                             <AlertDialog>
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
-                                                        <Button aria-haspopup="true" size="icon" variant="ghost">
+                                                        <Button aria-haspopup="true" size="icon" variant="ghost" aria-label="Open actions menu">
                                                             <MoreHorizontal className="h-4 w-4" />
-                                                            <span className="sr-only">Toggle menu</span>
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
@@ -176,7 +195,7 @@ export default function AdminWorkersManagePage() {
                                                             <DropdownMenuItem
                                                                 className="text-green-600 focus:text-green-700"
                                                                 onClick={() => handleApprove(worker.id, worker.fullName)}
-                                                                >
+                                                            >
                                                                 <CheckCircle className="mr-2 h-4 w-4" /> Approve Worker
                                                             </DropdownMenuItem>
                                                         }
@@ -184,15 +203,15 @@ export default function AdminWorkersManagePage() {
                                                             <DropdownMenuItem
                                                                 className="text-orange-600 focus:text-orange-700"
                                                                 onClick={() => handleSuspend(worker.id, worker.fullName)}
-                                                                >
+                                                            >
                                                                 <XCircle className="mr-2 h-4 w-4" /> Suspend
                                                             </DropdownMenuItem>
                                                         }
                                                         {worker.status === 'suspended' &&
-                                                             <DropdownMenuItem
+                                                            <DropdownMenuItem
                                                                 className="text-green-600 focus:text-green-700"
                                                                 onClick={() => handleApprove(worker.id, worker.fullName)}
-                                                                >
+                                                            >
                                                                 <CheckCircle className="mr-2 h-4 w-4" /> Re-activate
                                                             </DropdownMenuItem>
                                                         }
@@ -222,13 +241,13 @@ export default function AdminWorkersManagePage() {
                                         </TableCell>
                                     </TableRow>
                                 ))
-                           ) : (
+                            ) : (
                                 <TableRow>
                                     <TableCell colSpan={6} className="text-center h-24">
                                         No workers found.
                                     </TableCell>
                                 </TableRow>
-                           )}
+                            )}
                         </TableBody>
                     </Table>
                 </CardContent>
