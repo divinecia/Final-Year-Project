@@ -42,13 +42,13 @@ type MenuItem = {
 
 const menuItems: MenuItem[] = [
   { href: "/admin/dashboard", icon: <Home style={{ color: "rgb(76, 102, 164)" }} />, label: "Dashboard", exact: true },
-  { href: "/admin/workers/workermanage", icon: <HardHat style={{ color: "rgb(138, 165, 208)" }} />, label: "Workers" },
-  { href: "/admin/households", icon: <Building2 style={{ color: "rgb(76, 102, 164)" }} />, label: "Households" },
-  { href: "/admin/jobs", icon: <Briefcase style={{ color: "rgb(138, 165, 208)" }} />, label: "Jobs" },
-  { href: "/admin/training", icon: <GraduationCap style={{ color: "rgb(95, 108, 126)" }} />, label: "Training" },
-  { href: "/admin/packages", icon: <Package style={{ color: "rgb(76, 102, 164)" }} />, label: "Service Packages" },
-  { href: "/admin/payments", icon: <Wallet style={{ color: "rgb(138, 165, 208)" }} />, label: "Payments" },
-  { href: "/admin/reports", icon: <AreaChart style={{ color: "rgb(95, 108, 126)" }} />, label: "Reports" },
+  { href: "/admin/workers/workermanage", icon: <HardHat style={{ color: "rgb(76, 102, 164)" }} />, label: "Workers" },
+  { href: "/admin/households", icon: <Building2 style={{ color: "rgb(138, 165, 208)" }} />, label: "Households" },
+  { href: "/admin/jobs", icon: <Briefcase style={{ color: "rgb(76, 102, 164)" }} />, label: "Jobs" },
+  { href: "/admin/training", icon: <GraduationCap style={{ color: "rgb(138, 165, 208)" }} />, label: "Training" },
+  { href: "/admin/packages", icon: <Package style={{ color: "rgb(95, 108, 126)" }} />, label: "Service Packages" },
+  { href: "/admin/payments", icon: <Wallet style={{ color: "rgb(76, 102, 164)" }} />, label: "Payments" },
+  { href: "/admin/reports", icon: <AreaChart style={{ color: "rgb(138, 165, 208)" }} />, label: "Reports" },
 ]
 
 const settingsItems: MenuItem[] = [
