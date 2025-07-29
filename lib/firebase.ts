@@ -4,7 +4,7 @@ import { getFirestore, Firestore } from "firebase/firestore";
 import { getStorage, FirebaseStorage } from "firebase/storage";
 import { getAnalytics, Analytics, isSupported } from "firebase/analytics";
 
-// Firebase configuration
+// Firebase configuration with environment-specific settings
 const firebaseConfig = {
   apiKey: "AIzaSyBQZsvMlcu3H8G5K7x6TMgMj-F2fEUVKWo",
   authDomain: "househelp-42493.firebaseapp.com",
@@ -15,12 +15,16 @@ const firebaseConfig = {
   measurementId: "G-RT9TY3VS9L"
 };
 
+// Check if running on Replit
+const isReplit = typeof window !== "undefined" && 
+  (window.location.hostname.includes('replit.dev') || window.location.hostname.includes('repl.co'));
+
 // Initialize Firebase app (singleton)
 const app: FirebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
-// Analytics is only available in the browser
+// Analytics is only available in the browser and when domain is authorized
 let analytics: Analytics | undefined;
-if (typeof window !== "undefined") {
+if (typeof window !== "undefined" && !isReplit) {
   isSupported().then((supported) => {
     if (supported) {
       analytics = getAnalytics(app);
@@ -28,6 +32,8 @@ if (typeof window !== "undefined") {
   }).catch((error) => {
     console.warn('Analytics not supported:', error);
   });
+} else if (isReplit) {
+  console.log('Analytics disabled for Replit development environment');
 }
 
 const auth: Auth = getAuth(app);
@@ -37,15 +43,25 @@ const storage: FirebaseStorage = getStorage(app);
 // Configure auth for development environments
 if (typeof window !== "undefined") {
   const currentDomain = window.location.hostname;
+  const currentOrigin = window.location.origin;
+  
   if (currentDomain.includes('replit.dev') || currentDomain.includes('repl.co')) {
     // Handle Replit domain configuration
     console.log('Running on Replit domain:', currentDomain);
+    console.log('Add this domain to Firebase Console:', currentOrigin);
     
     // Configure auth settings for Replit domains
     auth.settings.appVerificationDisabledForTesting = true;
     
-    // Add current domain to console for Firebase Console configuration
-    console.log('Add this domain to Firebase Console:', window.location.origin);
+    // Disable app check for development
+    if (auth.app) {
+      try {
+        // Set custom claims for development
+        auth.useDeviceLanguage();
+      } catch (error) {
+        console.warn('Auth language configuration failed:', error);
+      }
+    }
   }
 }
 

@@ -1,16 +1,24 @@
 'use client';
 
-import {
+import { auth } from './firebase';
+import { 
+  signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
-  signInWithEmailAndPassword as firebaseSignIn,
-  signOut as firebaseSignOut,
+  signOut,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   GithubAuthProvider,
-  User
+  User,
+  AuthError,
+  UserCredential
 } from 'firebase/auth';
 import { FirebaseError } from 'firebase/app';
-import { auth } from '@/lib/firebase';
+
+// Check if running on Replit
+const isReplit = typeof window !== "undefined" && 
+  (window.location.hostname.includes('replit.dev') || window.location.hostname.includes('repl.co'));
 
 export interface AuthResult {
   success: boolean;
@@ -161,18 +169,24 @@ export async function getIdToken(): Promise<string | null> {
 export async function signInWithGoogle(): Promise<AuthResult> {
   try {
     const provider = new GoogleAuthProvider();
-    const userCredential = await signInWithPopup(auth, provider);
-    return {
-      success: true,
-      uid: userCredential.user.uid,
-      user: userCredential.user
-    };
+    provider.addScope('email');
+    provider.addScope('profile');
+
+    // Use redirect for Replit environment to avoid popup blocking
+    if (isReplit) {
+      await signInWithRedirect(auth, provider);
+      // The result will be handled by getRedirectResult on page load
+      return { success: true, user: null };
+    } else {
+      const result = await signInWithPopup(auth, provider);
+      return { success: true, user: result.user };
+    }
   } catch (error) {
-    const err = error as FirebaseError;
-    return {
-      success: false,
-      error: getAuthErrorMessage(err, 'google')
-    };
+    console.error('Google sign-in error:', error);
+    const message = error instanceof FirebaseError ? 
+      getAuthErrorMessage(error, 'google') : 
+      'Google sign-in failed';
+    return { success: false, error: message };
   }
 }
 
@@ -183,17 +197,21 @@ export async function signInWithGitHub(): Promise<AuthResult> {
   try {
     const provider = new GithubAuthProvider();
     provider.addScope('user:email');
-    const userCredential = await signInWithPopup(auth, provider);
-    return {
-      success: true,
-      uid: userCredential.user.uid,
-      user: userCredential.user
-    };
+
+    // Use redirect for Replit environment to avoid popup blocking
+    if (isReplit) {
+      await signInWithRedirect(auth, provider);
+      // The result will be handled by getRedirectResult on page load
+      return { success: true, user: null };
+    } else {
+      const result = await signInWithPopup(auth, provider);
+      return { success: true, user: result.user };
+    }
   } catch (error) {
-    const err = error as FirebaseError;
-    return {
-      success: false,
-      error: getAuthErrorMessage(err, 'github')
-    };
+    console.error('GitHub sign-in error:', error);
+    const message = error instanceof FirebaseError ? 
+      getAuthErrorMessage(error, 'github') : 
+      'GitHub sign-in failed';
+    return { success: false, error: message };
   }
 }
