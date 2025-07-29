@@ -6,6 +6,13 @@ const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
   
+  // Allow dev origins for Replit
+  experimental: {
+    allowedDevOrigins: [
+      'a28b2ceb-1cb6-4ce6-ac52-346d89bf7fb7-00-2csy9vsk3kznu.picard.replit.dev'
+    ],
+  },
+  
   // Output configuration for deployment
   output: process.env.NODE_ENV === 'production' ? 'standalone' : undefined,
   
