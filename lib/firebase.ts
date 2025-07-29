@@ -43,6 +43,9 @@ if (typeof window !== "undefined") {
     
     // Configure auth settings for Replit domains
     auth.settings.appVerificationDisabledForTesting = true;
+    
+    // Add current domain to console for Firebase Console configuration
+    console.log('Add this domain to Firebase Console:', window.location.origin);
   }
 }
 
