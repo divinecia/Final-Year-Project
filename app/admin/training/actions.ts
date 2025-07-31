@@ -10,6 +10,8 @@ import {
   query,
   orderBy,
   Timestamp,
+  where,
+  updateDoc,
 } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import * as z from 'zod';
@@ -30,7 +32,20 @@ export type TrainingProgram = z.infer<typeof trainingSchema> & {
 };
 export type TrainingFormData = z.infer<typeof trainingSchema>;
 
+export type TrainingRequest = {
+  id: string;
+  workerId: string;
+  workerName: string;
+  workerEmail: string;
+  trainingId: string;
+  trainingTitle: string;
+  status: 'pending' | 'approved' | 'rejected';
+  requestedAt: string;
+  message?: string;
+};
+
 const TRAINING_COLLECTION = 'training';
+const TRAINING_REQUESTS_COLLECTION = 'trainingRequests';
 const ADMIN_TRAINING_PATH = '/admin/training';
 
 function handleError(error: unknown, message: string) {
@@ -79,6 +94,61 @@ export async function getTrainings(): Promise<TrainingProgram[]> {
   } catch (error) {
     handleError(error, 'Error fetching trainings:');
     return [];
+  }
+}
+
+export async function getTrainingRequests(): Promise<TrainingRequest[]> {
+  try {
+    const requestsCollection = collection(db, TRAINING_REQUESTS_COLLECTION);
+    const q = query(requestsCollection, orderBy('requestedAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+
+    return querySnapshot.docs.map((docSnap) => {
+      const data = docSnap.data();
+      return {
+        id: docSnap.id,
+        workerId: data.workerId ?? '',
+        workerName: data.workerName ?? '',
+        workerEmail: data.workerEmail ?? '',
+        trainingId: data.trainingId ?? '',
+        trainingTitle: data.trainingTitle ?? '',
+        status: data.status ?? 'pending',
+        requestedAt: (data.requestedAt as Timestamp)?.toDate().toISOString() ?? '',
+        message: data.message ?? '',
+      };
+    });
+  } catch (error) {
+    handleError(error, 'Error fetching training requests:');
+    return [];
+  }
+}
+
+export async function approveTrainingRequest(requestId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const requestRef = doc(db, TRAINING_REQUESTS_COLLECTION, requestId);
+    await updateDoc(requestRef, {
+      status: 'approved',
+      approvedAt: Timestamp.now(),
+    });
+    revalidatePath(ADMIN_TRAINING_PATH);
+    return { success: true };
+  } catch (error) {
+    return handleError(error, 'Failed to approve training request.');
+  }
+}
+
+export async function rejectTrainingRequest(requestId: string, reason?: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const requestRef = doc(db, TRAINING_REQUESTS_COLLECTION, requestId);
+    await updateDoc(requestRef, {
+      status: 'rejected',
+      rejectedAt: Timestamp.now(),
+      rejectionReason: reason || '',
+    });
+    revalidatePath(ADMIN_TRAINING_PATH);
+    return { success: true };
+  } catch (error) {
+    return handleError(error, 'Failed to reject training request.');
   }
 }
 

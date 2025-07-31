@@ -13,6 +13,7 @@ import { onSnapshot, query, collection, orderBy } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
+import { ETATracker } from "./eta-tracker"
 
 export default function MessagingPage() {
     const { user, loading: authLoading } = useAuth();
@@ -24,6 +25,7 @@ export default function MessagingPage() {
     const [loading, setLoading] = React.useState(true);
     type UserProfile = { profilePicture?: string; fullName?: string; phone?: string; role?: string };
     const [otherUserProfile, setOtherUserProfile] = React.useState<UserProfile | null>(null);
+    const [etaInfo, setEtaInfo] = React.useState<any>(null);
     const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
     // Fetch chat rooms on mount
@@ -200,7 +202,14 @@ export default function MessagingPage() {
     return (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-12rem)]">
             {/* Chat Rooms List */}
-            <Card className="lg:col-span-1 flex flex-col">
+            <div className="lg:col-span-1 space-y-4">
+                <ETATracker 
+                    etaInfo={etaInfo}
+                    onCallWorker={handleCallWorker}
+                    onMessageWorker={() => {}}
+                />
+                
+                <Card className="flex flex-col">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <MessageCircle className="h-5 w-5" />
@@ -236,6 +245,7 @@ export default function MessagingPage() {
                     )}
                 </CardContent>
             </Card>
+            </div>
 
             {/* Chat Panel */}
             <Card className="lg:col-span-3 flex flex-col">
@@ -290,21 +300,6 @@ export default function MessagingPage() {
                                     <Send className="h-4 w-4" />
                                 </Button>
                             </form>
-                            {/* ETA sharing for workers */}
-                            {otherUserProfile && otherUserProfile.role === 'worker' && (
-                                <form onSubmit={e => { e.preventDefault(); handleSendEta(); }} className="flex gap-2 items-center">
-                                    <Input 
-                                        placeholder="Share ETA (e.g. 15 minutes)" 
-                                        value={eta}
-                                        onChange={e => setEta(e.target.value)}
-                                        disabled={sendingEta}
-                                        className="max-w-xs"
-                                    />
-                                    <Button type="submit" disabled={!eta.trim() || sendingEta} variant="outline">
-                                        {sendingEta ? 'Sending...' : 'Send ETA'}
-                                    </Button>
-                                </form>
-                            )}
                         </div>
                     </>
                 ) : (

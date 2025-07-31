@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -28,12 +27,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Phone, Shield } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
 
 const formSchema = z.object({
   bookingId: z.string({ required_error: "Please select the relevant booking." }),
-  issueType: z.enum(["system", "worker"], { required_error: "Please select the type of issue." }),
+  issueType: z.enum(["system", "worker", "maintenance"], { required_error: "Please select the type of issue." }),
   urgency: z.string({ required_error: "Please select an urgency level." }),
   description: z.string().min(20, "Please provide a detailed description of at least 20 characters."),
+  sendToIsange: z.boolean().default(false),
+  contactInfo: z.string().optional(),
 });
 
 type ReportIssueFormProps = {
@@ -43,6 +45,7 @@ type ReportIssueFormProps = {
 
 export function ReportIssueForm({ open, onOpenChange }: ReportIssueFormProps) {
   const { toast } = useToast();
+  const [sendToIsange, setSendToIsange] = React.useState(false);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -115,6 +118,10 @@ export function ReportIssueForm({ open, onOpenChange }: ReportIssueFormProps) {
                         <FormLabel className="font-normal">System Problem (e.g., bug, payment error)</FormLabel>
                       </FormItem>
                       <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl><RadioGroupItem value="maintenance" /></FormControl>
+                        <FormLabel className="font-normal">System Maintenance Request</FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-3 space-y-0">
                         <FormControl><RadioGroupItem value="worker" /></FormControl>
                         <FormLabel className="font-normal">Worker Behavior / Safety Concern</FormLabel>
                       </FormItem>
@@ -126,7 +133,8 @@ export function ReportIssueForm({ open, onOpenChange }: ReportIssueFormProps) {
             />
             
             {issueType === 'worker' && (
-                 <Alert variant="destructive">
+                <div className="space-y-4">
+                  <Alert variant="destructive">
                     <Shield className="h-4 w-4" />
                     <AlertTitle>Safety First!</AlertTitle>
                     <AlertDescription>
@@ -136,7 +144,35 @@ export function ReportIssueForm({ open, onOpenChange }: ReportIssueFormProps) {
                            <p><span className="font-semibold">Isange One Stop:</span> 3020</p>
                         </div>
                     </AlertDescription>
-                </Alert>
+                  </Alert>
+                  
+                  <FormField
+                    control={form.control}
+                    name="sendToIsange"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <Checkbox 
+                            checked={field.value} 
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              setSendToIsange(checked as boolean);
+                            }} 
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>
+                            Send copy to ISANGE One Stop Center
+                          </FormLabel>
+                          <p className="text-xs text-muted-foreground">
+                            For serious safety concerns, we can forward your report to ISANGE One Stop Center 
+                            (info1@kicukiro.gov.rw) for additional support and intervention.
+                          </p>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                </div>
             )}
 
              <FormField
@@ -152,6 +188,7 @@ export function ReportIssueForm({ open, onOpenChange }: ReportIssueFormProps) {
                           <SelectItem value="medium">Medium (Service quality issue)</SelectItem>
                           <SelectItem value="high">High (Requires prompt attention)</SelectItem>
                           {issueType === 'worker' && <SelectItem value="emergency" className="text-destructive">Emergency (Safety concern)</SelectItem>}
+                          {issueType === 'maintenance' && <SelectItem value="low">Low (General maintenance)</SelectItem>}
                       </SelectContent>
                   </Select>
                   <FormMessage />
@@ -167,7 +204,11 @@ export function ReportIssueForm({ open, onOpenChange }: ReportIssueFormProps) {
                   <FormLabel>Detailed Description</FormLabel>
                   <FormControl>
                     <Textarea 
-                      placeholder="Please provide as much detail as possible, including dates, times, and what happened." 
+                      placeholder={
+                        issueType === 'maintenance' 
+                          ? "Describe the system issue or maintenance request in detail..."
+                          : "Please provide as much detail as possible, including dates, times, and what happened."
+                      }
                       rows={5} 
                       {...field} 
                     />

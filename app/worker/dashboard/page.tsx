@@ -15,6 +15,7 @@ import { getWorkerDashboardStats, getNewJobOpportunities, type WorkerDashboardSt
 import type { Job } from "../jobs/actions"
 import { serviceOptions } from "@/lib/services";
 import Link from "next/link";
+import { ArrivalConfirmation } from "./arrival-confirmation";
 
 export default function WorkerDashboardPage() {
     const { user, loading: authLoading } = useAuth();
@@ -23,6 +24,7 @@ export default function WorkerDashboardPage() {
     const [stats, setStats] = React.useState<WorkerDashboardStats | null>(null);
     const [jobs, setJobs] = React.useState<Job[]>([]);
     const [loading, setLoading] = React.useState(true);
+    const [currentAssignment, setCurrentAssignment] = React.useState<any>(null);
     interface NotificationPreview {
         id: string;
         title?: string;
@@ -177,6 +179,17 @@ export default function WorkerDashboardPage() {
         if (user) fetchReviews();
     }, [user]);
     
+    const handleConfirmArrival = async (jobId: string) => {
+        // Update job status to 'arrived'
+        // Send notification to household
+        console.log('Confirming arrival for job:', jobId);
+    };
+
+    const handleUpdateETA = async (jobId: string, eta: string) => {
+        // Update ETA and notify household
+        console.log('Updating ETA for job:', jobId, 'to:', eta);
+    };
+    
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'RWF', minimumFractionDigits: 0 }).format(amount).replace('RWF', 'RWF ');
     };
@@ -207,6 +220,14 @@ export default function WorkerDashboardPage() {
             <Button asChild><Link href="/worker/settings">Complete Profile <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
           </CardFooter>
         </Card>
+        
+        {/* Arrival Confirmation */}
+        <ArrivalConfirmation 
+          assignment={currentAssignment}
+          onConfirmArrival={handleConfirmArrival}
+          onUpdateETA={handleUpdateETA}
+        />
+        
         {/* Notifications preview */}
         <Card>
           <CardHeader>
@@ -236,36 +257,6 @@ export default function WorkerDashboardPage() {
           </CardContent>
           <CardFooter>
             <Button asChild variant="outline" className="w-full"><Link href="/worker/notifications">View All</Link></Button>
-          </CardFooter>
-        </Card>
-        {/* Messaging preview */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Messages</CardTitle>
-            <CardDescription>Recent conversations</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {messagesPreview.length === 0 ? (
-                <span className="text-sm text-muted-foreground">No recent messages.</span>
-              ) : (
-                messagesPreview.map((room) => {
-                  // Type guard for message room
-                  if (!room || typeof room !== 'object' || typeof room.id !== 'string') return null;
-                  const jobTitle = typeof room.jobTitle === 'string' ? room.jobTitle : '';
-                  const lastMessage = typeof room.lastMessage === 'string' ? room.lastMessage : '';
-                  return (
-                    <div key={room.id} className="flex items-center gap-2">
-                      <Avatar className="h-6 w-6"><AvatarFallback>{jobTitle.charAt(0) || "H"}</AvatarFallback></Avatar>
-                      <span className="text-sm font-medium">{lastMessage ? lastMessage : jobTitle || "Conversation"}</span>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button asChild variant="outline" className="w-full"><Link href="/worker/messaging">Go to Messaging</Link></Button>
           </CardFooter>
         </Card>
       </div>

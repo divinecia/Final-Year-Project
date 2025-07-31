@@ -5,7 +5,8 @@ export async function sendPasswordResetEmail(email: string, userType: UserType):
     // Optionally, you can check if the user exists in Firestore for the given userType before sending
     // const userExists = await userProfileExistsByEmail(email, userType);
     // if (!userExists) throw new Error('No user found with this email.');
-    await import('firebase/auth').then(({ sendPasswordResetEmail }) => sendPasswordResetEmail(auth, email));
+    const { sendPasswordResetEmail: firebaseSendPasswordResetEmail } = await import('firebase/auth');
+    await firebaseSendPasswordResetEmail(auth, email);
   } catch (error: any) {
     console.error(`Password reset error for ${userType}:`, error);
     throw new Error(error.message || 'Failed to send password reset email.');

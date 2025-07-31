@@ -21,6 +21,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { WorkerSettingsSchema, type WorkerProfile } from "@/lib/schemas/worker"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAuth } from "@/hooks/use-auth"
+import { InsuranceSelection } from "./insurance-selection"
 
 
 const LANGUAGES = [
@@ -36,6 +37,7 @@ export default function WorkerSettingsPage() {
     const [worker, setWorker] = useState<WorkerProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const [profileImage, setProfileImage] = useState<string | null>(null);
+    const [selectedInsurance, setSelectedInsurance] = useState<string>("");
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const form = useForm<z.infer<typeof WorkerSettingsSchema>>({
@@ -343,6 +345,11 @@ export default function WorkerSettingsPage() {
                         />
                     </CardContent>
                 </Card>
+
+                <InsuranceSelection 
+                    selectedInsuranceId={selectedInsurance}
+                    onInsuranceChange={setSelectedInsurance}
+                />
 
                 <div className="flex justify-end">
                     <Button type="submit">Save All Changes</Button>

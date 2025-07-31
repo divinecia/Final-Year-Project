@@ -1,257 +1,254 @@
 import React, { useState, useEffect } from "react";
-
-type Module = {
-  id: number;
-  name: string;
-};
-
-type WorkerRequest = {
-  id: number;
-  name: string;
-};
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CheckCircle, XCircle, Clock, Plus } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { TrainingForm } from "./training-form";
+import { 
+  getTrainings, 
+  getTrainingRequests, 
+  approveTrainingRequest, 
+  rejectTrainingRequest,
+  type TrainingProgram,
+  type TrainingRequest 
+} from "./actions";
 
 export default function AdminTrainingPage() {
-  const [modules, setModules] = useState<Module[]>([]);
-  const [workerRequests, setWorkerRequests] = useState<WorkerRequest[]>([]);
-  const [newModule, setNewModule] = useState("");
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editingName, setEditingName] = useState("");
+  const [trainings, setTrainings] = useState<TrainingProgram[]>([]);
+  const [trainingRequests, setTrainingRequests] = useState<TrainingRequest[]>([]);
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
-  // Fetch data from API
-  useEffect(() => {
-    async function fetchData() {
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [trainingsData, requestsData] = await Promise.all([
+        getTrainings(),
+        getTrainingRequests()
+      ]);
+      setTrainings(trainingsData);
+      setTrainingRequests(requestsData);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load training data."
+      });
+    } finally {
       setLoading(true);
-      setError(null);
-      try {
-        const [modulesRes, workersRes] = await Promise.all([
-          fetch("/api/modules"),
-          fetch("/api/worker-requests"),
-        ]);
-        if (!modulesRes.ok || !workersRes.ok) throw new Error("Failed to fetch data");
-        setModules(await modulesRes.json());
-        setWorkerRequests(await workersRes.json());
-      } catch {
-        setError("Failed to load data.");
-      } finally {
-        setLoading(false);
-      }
     }
+  };
+
+  useEffect(() => {
     fetchData();
   }, []);
 
-  // Create
-  const handleAdd = async () => {
-    if (!newModule.trim()) return;
-    setActionLoading(true);
-    setError(null);
+  const handleApproveRequest = async (requestId: string) => {
     try {
-      const res = await fetch("/api/modules", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newModule.trim() }),
+      const result = await approveTrainingRequest(requestId);
+      if (result.success) {
+        toast({
+          title: "Request Approved",
+          description: "Training request has been approved."
+        });
+        fetchData();
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: result.error || "Failed to approve request."
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to approve training request."
       });
-      if (!res.ok) throw new Error("Failed to add module");
-      const created = await res.json();
-      setModules([...modules, created]);
-      setNewModule("");
-    } catch {
-      setError("Could not add module.");
-    } finally {
-      setActionLoading(false);
     }
   };
 
-  // Update
-  const handleEdit = (id: number, name: string) => {
-    setEditingId(id);
-    setEditingName(name);
-  };
-
-  const handleUpdate = async () => {
-    if (editingId === null || !editingName.trim()) return;
-    setActionLoading(true);
-    setError(null);
+  const handleRejectRequest = async (requestId: string) => {
     try {
-      const res = await fetch(`/api/modules/${editingId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: editingName }),
+      const result = await rejectTrainingRequest(requestId, "Request rejected by admin");
+      if (result.success) {
+        toast({
+          title: "Request Rejected",
+          description: "Training request has been rejected."
+        });
+        fetchData();
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: result.error || "Failed to reject request."
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to reject training request."
       });
-      if (!res.ok) throw new Error("Failed to update module");
-      setModules(modules.map(m =>
-        m.id === editingId ? { ...m, name: editingName } : m
-      ));
-      setEditingId(null);
-      setEditingName("");
-    } catch {
-      setError("Could not update module.");
-    } finally {
-      setActionLoading(false);
     }
   };
 
-  // Delete
-  const handleDelete = async (id: number) => {
-    setActionLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/modules/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete module");
-      setModules(modules.filter(m => m.id !== id));
-    } catch {
-      setError("Could not delete module.");
-    } finally {
-      setActionLoading(false);
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return <Badge className="bg-green-100 text-green-800">Approved</Badge>;
+      case 'rejected':
+        return <Badge variant="destructive">Rejected</Badge>;
+      default:
+        return <Badge variant="secondary">Pending</Badge>;
     }
   };
 
-  // Accept/Deny worker requests
-  const handleAccept = async (id: number) => {
-    setActionLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/worker-requests/${id}/accept`, { method: "POST" });
-      if (!res.ok) throw new Error("Failed to accept request");
-      setWorkerRequests(workerRequests.filter(w => w.id !== id));
-    } catch {
-      setError("Could not accept worker request.");
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleDeny = async (id: number) => {
-    setActionLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/worker-requests/${id}/deny`, { method: "POST" });
-      if (!res.ok) throw new Error("Failed to deny request");
-      setWorkerRequests(workerRequests.filter(w => w.id !== id));
-    } catch {
-      setError("Could not deny worker request.");
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  if (loading) return <div>Loading...</div>;
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="h-8 w-64 bg-muted animate-pulse rounded" />
+        <div className="h-64 bg-muted animate-pulse rounded" />
+      </div>
+    );
+  }
 
   return (
-    <section className="max-w-2xl mx-auto p-6 bg-white rounded shadow">
-      <h2 className="text-xl font-bold mb-4">Training Modules</h2>
-      {error && <div className="mb-4 text-red-600">{error}</div>}
-      <div className="mb-6">
-        <input
-          type="text"
-          value={newModule}
-          onChange={e => setNewModule(e.target.value)}
-          placeholder="Add new module"
-          className="border px-2 py-1 rounded mr-2"
-          aria-label="Add new module"
-          disabled={actionLoading}
-        />
-        <button
-          onClick={handleAdd}
-          className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
-          disabled={!newModule.trim() || actionLoading}
-          aria-label="Add module"
-        >
-          {actionLoading ? "Adding..." : "Add"}
-        </button>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Training Management</h1>
+          <p className="text-muted-foreground">Manage training programs and worker requests.</p>
+        </div>
+        <Button onClick={() => setIsFormOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Training Program
+        </Button>
       </div>
-      <ul className="mb-8">
-        {modules.length === 0 ? (
-          <li className="text-gray-500">No modules found.</li>
-        ) : (
-          modules.map(module => (
-            <li key={module.id} className="flex items-center mb-2">
-              {editingId === module.id ? (
-                <>
-                  <input
-                    type="text"
-                    value={editingName}
-                    onChange={e => setEditingName(e.target.value)}
-                    className="border px-2 py-1 rounded mr-2"
-                    aria-label="Edit module name"
-                    disabled={actionLoading}
-                  />
-                  <button
-                    onClick={handleUpdate}
-                    className="bg-green-600 text-white px-2 py-1 rounded mr-2 hover:bg-green-700"
-                    disabled={!editingName.trim() || actionLoading}
-                    aria-label="Save module"
-                  >
-                    {actionLoading ? "Saving..." : "Save"}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setEditingId(null);
-                      setEditingName("");
-                    }}
-                    className="bg-gray-300 px-2 py-1 rounded hover:bg-gray-400"
-                    disabled={actionLoading}
-                    aria-label="Cancel edit"
-                  >
-                    Cancel
-                  </button>
-                </>
-              ) : (
-                <>
-                  <span className="flex-1">{module.name}</span>
-                  <button
-                    onClick={() => handleEdit(module.id, module.name)}
-                    className="bg-yellow-500 text-white px-2 py-1 rounded mr-2 hover:bg-yellow-600"
-                    disabled={actionLoading}
-                    aria-label={`Edit ${module.name}`}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(module.id)}
-                    className="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700"
-                    disabled={actionLoading}
-                    aria-label={`Delete ${module.name}`}
-                  >
-                    Delete
-                  </button>
-                </>
-              )}
-            </li>
-          ))
-        )}
-      </ul>
 
-      <h2 className="text-xl font-bold mb-4">Worker Requests</h2>
-      <ul>
-        {workerRequests.length === 0 ? (
-          <li className="text-gray-500">No worker requests.</li>
-        ) : (
-          workerRequests.map(worker => (
-            <li key={worker.id} className="flex items-center mb-2">
-              <span className="flex-1">{worker.name}</span>
-              <button
-                onClick={() => handleAccept(worker.id)}
-                className="bg-green-600 text-white px-2 py-1 rounded mr-2 hover:bg-green-700"
-                disabled={actionLoading}
-                aria-label={`Accept ${worker.name}`}
-              >
-                Accept
-              </button>
-              <button
-                onClick={() => handleDeny(worker.id)}
-                className="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700"
-                disabled={actionLoading}
-                aria-label={`Deny ${worker.name}`}
-              >
-                Deny
-              </button>
-            </li>
-          ))
-        )}
-      </ul>
-    </section>
+      <Tabs defaultValue="programs" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="programs">Training Programs</TabsTrigger>
+          <TabsTrigger value="requests">
+            Worker Requests 
+            {trainingRequests.filter(r => r.status === 'pending').length > 0 && (
+              <Badge className="ml-2" variant="destructive">
+                {trainingRequests.filter(r => r.status === 'pending').length}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="programs">
+          <Card>
+            <CardHeader>
+              <CardTitle>Available Training Programs</CardTitle>
+              <CardDescription>Manage training programs for workers.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {trainings.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No training programs available. Create one to get started.
+                </div>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {trainings.map((training) => (
+                    <Card key={training.id}>
+                      <CardHeader>
+                        <CardTitle className="text-lg">{training.title}</CardTitle>
+                        <Badge variant="secondary">{training.category}</Badge>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Duration: {training.duration}
+                        </p>
+                        <p className="text-sm">{training.description}</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="requests">
+          <Card>
+            <CardHeader>
+              <CardTitle>Training Requests from Workers</CardTitle>
+              <CardDescription>Review and approve worker training requests.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {trainingRequests.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No training requests yet.
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Worker</TableHead>
+                      <TableHead>Training Program</TableHead>
+                      <TableHead>Requested Date</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {trainingRequests.map((request) => (
+                      <TableRow key={request.id}>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{request.workerName}</p>
+                            <p className="text-sm text-muted-foreground">{request.workerEmail}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>{request.trainingTitle}</TableCell>
+                        <TableCell>
+                          {new Date(request.requestedAt).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>{getStatusBadge(request.status)}</TableCell>
+                        <TableCell>
+                          {request.status === 'pending' && (
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => handleApproveRequest(request.id)}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                <CheckCircle className="mr-1 h-3 w-3" />
+                                Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleRejectRequest(request.id)}
+                              >
+                                <XCircle className="mr-1 h-3 w-3" />
+                                Reject
+                              </Button>
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      <TrainingForm 
+        open={isFormOpen} 
+        onOpenChange={setIsFormOpen} 
+        onFormSubmit={fetchData}
+      />
+    </div>
   );
 }
