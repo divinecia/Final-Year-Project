@@ -1,5 +1,4 @@
 import type {NextConfig} from 'next';
-import withPWA from 'next-pwa';
 
 const nextConfig: NextConfig = {
   // Essential optimizations only
@@ -9,7 +8,6 @@ const nextConfig: NextConfig = {
   // Allow dev origins for Replit
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
-    // merge any other experimental options here
   },
   
   // Output configuration for deployment
@@ -17,12 +15,11 @@ const nextConfig: NextConfig = {
   
   // Build settings
   typescript: {
-    ignoreBuildErrors: true, // Temporarily ignore to fix build
+    ignoreBuildErrors: false,
   },
   eslint: {
-    ignoreDuringBuilds: true, // Temporarily ignore to fix build
+    ignoreDuringBuilds: false,
   },
-  
   
   // Image optimizations
   images: {
@@ -30,6 +27,16 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'firebasestorage.googleapis.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'ui-avatars.io',
         pathname: '/**',
       }
     ],
@@ -72,11 +79,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-const withPWAConfig = withPWA({
-  dest: 'public',
-  disable: process.env.NODE_ENV === 'development',
-  register: true,
-  skipWaiting: true,
-});
-
-export default withPWAConfig(nextConfig);
+export default nextConfig;

@@ -1,13 +1,6 @@
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-}
 "use client";
 
-import React, { useState, useEffect, createContext, useContext, ReactNode, useMemo } from 'react';
+import React, { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
 import { app } from '../lib/firebase';
 
@@ -27,14 +20,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
       setLoading(false);
-        });
+    });
     
-        return () => unsubscribe();
-      }, []);
+    return () => unsubscribe();
+  }, []);
     
-      return (
-        <AuthContext.Provider value={{ user, loading }}>
-          {children}
-        </AuthContext.Provider>
-      );
-    };
+  return (
+    <AuthContext.Provider value={{ user, loading }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+}

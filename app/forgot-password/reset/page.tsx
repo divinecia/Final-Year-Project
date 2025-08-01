@@ -1,3 +1,5 @@
+"use client"
+
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
@@ -6,7 +8,7 @@ import * as z from "zod";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 
 const formSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
@@ -65,6 +67,7 @@ export default function ResetPasswordPage() {
                       <FormControl>
                         <Input type="password" {...field} />
                       </FormControl>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -77,6 +80,7 @@ export default function ResetPasswordPage() {
                       <FormControl>
                         <Input type="password" {...field} />
                       </FormControl>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -88,4 +92,4 @@ export default function ResetPasswordPage() {
       </div>
     </main>
   );
-  }
+}

@@ -186,6 +186,7 @@ async function main() {
   }
 }
 
-if (require.main === module) {
+// Check if this module is being run directly
+if (typeof require !== 'undefined' && require.main === module) {
   main();
 }

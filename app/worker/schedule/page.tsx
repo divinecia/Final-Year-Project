@@ -23,6 +23,24 @@ type ScheduledJob = {
     jobTime: string;
 };
 
+// Job details modal implementation
+function JobDetailsModal({ job, onClose }: { job: ScheduledJob | null, onClose: () => void }) {
+    if (!job) return null;
+    return (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
+            <div className="bg-white rounded-lg shadow-lg p-6 max-w-lg w-full">
+                <h2 className="text-xl font-bold mb-2">{job.jobTitle}</h2>
+                <p className="text-muted-foreground mb-2">{job.householdName}</p>
+                <div className="mb-2">Location: <span className="font-semibold">{job.householdLocation}</span></div>
+                <div className="mb-2">Date: <span className="font-semibold">{job.jobDate.toLocaleDateString()}</span></div>
+                <div className="mb-2">Time: <span className="font-semibold">{job.jobTime}</span></div>
+                <div className="mb-2">Status: <Badge variant={job.status === 'completed' ? 'secondary' : job.status === 'cancelled' ? 'destructive' : 'default'}>{job.status.charAt(0).toUpperCase() + job.status.slice(1)}</Badge></div>
+                <Button onClick={onClose} className="mt-4">Close</Button>
+            </div>
+        </div>
+    );
+}
+
 const JobCard = ({ job }: { job: ScheduledJob }) => (
     <Card>
         <CardHeader className="pb-4 flex flex-row items-center justify-between">
@@ -211,20 +229,3 @@ export default function WorkerSchedulePage() {
 
 // Force dynamic rendering to avoid SSG issues
 export const dynamic = 'force-dynamic';
-// Job details modal implementation
-function JobDetailsModal({ job, onClose }: { job: ScheduledJob, onClose: () => void }) {
-    if (!job) return null;
-    return (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
-            <div className="bg-white rounded-lg shadow-lg p-6 max-w-lg w-full">
-                <h2 className="text-xl font-bold mb-2">{job.jobTitle}</h2>
-                <p className="text-muted-foreground mb-2">{job.householdName}</p>
-                <div className="mb-2">Location: <span className="font-semibold">{job.householdLocation}</span></div>
-                <div className="mb-2">Date: <span className="font-semibold">{job.jobDate.toLocaleDateString()}</span></div>
-                <div className="mb-2">Time: <span className="font-semibold">{job.jobTime}</span></div>
-                <div className="mb-2">Status: <Badge variant={job.status === 'completed' ? 'secondary' : job.status === 'cancelled' ? 'destructive' : 'default'}>{job.status.charAt(0).toUpperCase() + job.status.slice(1)}</Badge></div>
-                <Button onClick={onClose} className="mt-4">Close</Button>
-            </div>
-        </div>
-    );
-}

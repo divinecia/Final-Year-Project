@@ -1,15 +1,23 @@
 "use client"
 
+import React, { useRef, useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Upload, FileText, AlertCircle } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+
 interface UploadTrainingFormProps {
   onUpload?: (file: File) => void
 }
-import React, { useRef, useState } from "react"
+
 export default function UploadTrainingForm({ onUpload }: UploadTrainingFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
-import { Button } from "@/components/ui/button"
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -32,7 +40,7 @@ import { Button } from "@/components/ui/button"
       setSelectedFile(file)
     }
   }
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedFile) {
@@ -54,7 +62,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
       setUploading(false)
     }
   }
-import { Input } from "@/components/ui/input"
+
   return (
     <Card className="max-w-md mx-auto">
       <CardHeader>
@@ -106,6 +114,3 @@ import { Input } from "@/components/ui/input"
     </Card>
   )
 }
-import { Label } from "@/components/ui/label"
-import { Upload, FileText, AlertCircle } from "lucide-react"
-import { Alert, AlertDescription } from "@/components/ui/alert"

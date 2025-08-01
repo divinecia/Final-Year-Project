@@ -1,10 +1,12 @@
+"use client"
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, XCircle, Clock, Plus } from "lucide-react";
+import { CheckCircle, XCircle, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TrainingForm } from "./training-form";
 import { 
@@ -39,7 +41,7 @@ export default function AdminTrainingPage() {
         description: "Failed to load training data."
       });
     } finally {
-      setLoading(true);
+      setLoading(false);
     }
   };
 
